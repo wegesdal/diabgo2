@@ -62,7 +62,7 @@ func spawn_actor(x int, y int, name string, anims map[int][]*ebiten.Image) *acto
 	return &a
 }
 
-func generateActorSprites(p ebiten.Image, num_rows int, size int) map[int][]*ebiten.Image {
+func generateActorSprites(p *ebiten.Image, num_rows int, size int) map[int][]*ebiten.Image {
 	anim := make(map[int][]*ebiten.Image)
 	num_frames := 10
 	directions := 4
@@ -74,7 +74,7 @@ func generateActorSprites(p ebiten.Image, num_rows int, size int) map[int][]*ebi
 	return anim
 }
 
-func generateCharacterSprites(p ebiten.Image, size int) map[int][]*ebiten.Image {
+func generateCharacterSprites(p *ebiten.Image, size int) map[int][]*ebiten.Image {
 	anim := make(map[int][]*ebiten.Image)
 	num_poses := 6
 	num_angles := 8
