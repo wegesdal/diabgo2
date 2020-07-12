@@ -89,8 +89,8 @@ func init() {
 
 }
 
-func lerp_vec64(v0 vec64, v1 vec64, t float64) vec64 {
-	return vec64{x: (1-t)*v0.x + t*v1.x, y: (1-t)*v0.y + t*v1.y}
+func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (float64, float64) {
+	return (1-t)*v0x + t*v1x, (1-t)*v0y + t*v1y
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
@@ -100,8 +100,10 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	for _, c := range characters {
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
-		c.actor.coord = lerp_vec64(c.actor.coord, vec64{x: cx, y: cy}, 0.08)
+		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.08)
 	}
+
+	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
 
 	dt := 2.0 / 60
 	// Write your game's logical update.
@@ -204,8 +206,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	var player *actor
-
 	// DRAW ACTORS
 	for _, a := range actors {
 
@@ -221,10 +221,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// widgets will have an anims length of 1
 		startingFrame = a.direction * 10
 
-		if a.name == "player" {
-			player = a
-		}
-
 		// g.op.GeoM.Reset()
 		// //Translate for isometric
 		// // g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
@@ -237,7 +233,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			g.op.GeoM.Reset()
 			//Translate for isometric
 			g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-			g.op.GeoM.Translate(-80.0, -80.0)
+			g.op.GeoM.Translate(-96.0, -96.0)
 
 			//Translate for camera position
 			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
@@ -294,7 +290,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen,
 		fmt.Sprintf("TPS: %0.2f\n,Cursor World Pos: %.2v,%.2v\nPlayer Pos: %v, %v\n",
 			ebiten.CurrentTPS(),
-			tileX, tileY, player.x, player.y),
+			tileX, tileY, player.actor.x, player.actor.y),
 	)
 }
 
