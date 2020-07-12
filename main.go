@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 
@@ -16,12 +17,20 @@ type vec64 struct {
 	y float64
 }
 
+const tileSize = 64.0
+
 var (
-	tileSize     = 64.0
 	tilesImage   *ebiten.Image
 	levelData    [32][32]*node
 	endOfTheRoad *node
 	tiles        []*ebiten.Image
+)
+
+const (
+	windowWidth  = 1280
+	windowHeight = 900
+	screenWidth  = 640
+	screenHeight = 480
 )
 
 var (
@@ -32,6 +41,24 @@ var (
 	frames      int
 	second      = time.Tick(time.Second)
 )
+
+type Game struct {
+	Name          string //Name of the game ("gollercoaster for now")
+	windowWidth   int
+	windowHeight  int
+	tileSize      int
+	CamPosX       float64
+	CamPosY       float64
+	CamSpeed      float64
+	CamZoom       float64
+	CamZoomSpeed  float64
+	op            *ebiten.DrawImageOptions
+	buffer        *ebiten.Image
+	drawToBuffer  bool
+	lastMousePosX int
+	lastMousePosY int
+	count         int
+}
 
 func init() {
 	var err error
@@ -62,33 +89,122 @@ func init() {
 
 }
 
-type Game struct {
-	count int
+func lerp_vec64(v0 vec64, v1 vec64, t float64) vec64 {
+	return vec64{x: (1-t)*v0.x + t*v1.x, y: (1-t)*v0.y + t*v1.y}
 }
 
 func (g *Game) Update(screen *ebiten.Image) error {
 
-	characterStateMachine(characters, levelData)
-	// terminalStateMachine(actors)
-	actors, characters = removeDeadCharacters(actors, characters)
+	clearVisibility(levelData)
+	compute_fov(vec{x: player.actor.x, y: player.actor.y}, levelData)
 
+	for _, c := range characters {
+		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
+		c.actor.coord = lerp_vec64(c.actor.coord, vec64{x: cx, y: cy}, 0.08)
+	}
+
+	dt := 2.0 / 60
+	// Write your game's logical update.
+
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
+		g.CamPosX -= g.CamSpeed * dt / g.CamZoom
+		g.drawToBuffer = true
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
+		g.CamPosX += g.CamSpeed * dt / g.CamZoom
+		g.drawToBuffer = true
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
+		g.CamPosY -= g.CamSpeed * dt / g.CamZoom
+		g.drawToBuffer = true
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
+		g.CamPosY += g.CamSpeed * dt / g.CamZoom
+		g.drawToBuffer = true
+	}
+	_, sY := ebiten.Wheel()
+	g.CamZoom *= math.Pow(g.CamZoomSpeed, sY)
+
+	if sY != 0 {
+		g.drawToBuffer = true
+	}
+
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		// fmt.Printf("x: %d, y: %d", mx, my)
+
+		player.actor.state = walk
+		player.target = player
+
+		//Get the cursor position
+		mx, my := ebiten.CursorPosition()
+		//Offset for center
+		fmx := float64(mx) - float64(g.windowWidth)/2.0
+		fmy := float64(my) - float64(g.windowHeight)/2.0
+		// x, y := float64(mx)+float64(g.windowWidth/2.0), float64(my)+float64(g.windowHeight/2.0)
+		//Translate it to game coordinates
+		x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+
+		//Do a half tile mouse shift because of our perspective
+		x -= .5 * float64(g.tileSize)
+		y -= .5 * float64(g.tileSize)
+		//Convert isometric
+		imx, imy := isoToCartesian(x, y)
+
+		tileX := int(imx)
+		tileY := int(imy)
+
+		// for _, c := range characters {
+		// offset y so targeting box is above model
+		// y_offset := 80.0
+		// diff := pixel.Vec.Add(pixel.Vec.Sub(c.actor.coord, cam.Unproject(win.MousePosition())), pixel.Vec{X: 0, Y: y_offset})
+		// if math.Abs(diff.X) < 50 && math.Abs(diff.Y) < 100 && c != player {
+		// 	player.target = c
+		// 	break
+		// }
+		// }
+		if tileX < len(levelData[0]) && tileY < len(levelData[0]) && tileX >= 0 && tileY >= 0 {
+			player.dest = &node{x: tileX, y: tileY}
+		}
+	}
+
+	if g.count%3 == 0 {
+		characterStateMachine(characters, levelData)
+
+		// terminalStateMachine(actors)
+		actors, characters = removeDeadCharacters(actors, characters)
+
+	}
+	g.count++
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.buffer.Clear()
 	screen.Fill(color.RGBA{0x10, 0x10, 0x10, 1})
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
+	// ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
 
-	drawHealthPlates(screen, characters)
+	// drawHealthPlates(screen, characters)
 
 	for x := 0; x < len(levelData[0]); x++ {
 		for y := 0; y < len(levelData[0]); y++ {
-			isoCoords := cartesianToIso(vec64{x: float64(x), y: float64(y)})
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(isoCoords.x, isoCoords.y)
-			screen.DrawImage(tiles[levelData[x][y].tile], op)
+			xi, yi := cartesianToIso(float64(x), float64(y))
+			g.op.GeoM.Reset()
+			//Translate for isometric
+			g.op.GeoM.Translate(float64(xi), float64(yi))
+			//Translate for camera position
+			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+			//Scale for camera zoom
+			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+			//Translate for center of screen offset
+			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
+			if levelData[x][y].visible {
+				t := tiles[levelData[x][y].tile]
+				screen.DrawImage(t, g.op)
+			}
 		}
 	}
+
+	var player *actor
 
 	// DRAW ACTORS
 	for _, a := range actors {
@@ -105,15 +221,35 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// widgets will have an anims length of 1
 		startingFrame = a.direction * 10
 
+		if a.name == "player" {
+			player = a
+		}
+
+		// g.op.GeoM.Reset()
+		// //Translate for isometric
+		// // g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
+		// //Translate for camera position
+		// g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+		// //Scale for camera zoom
+		// g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+
 		if len(a.anims) == 6 {
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(0.0, 0.0)
+			g.op.GeoM.Reset()
+			//Translate for isometric
+			g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
+			g.op.GeoM.Translate(-80.0, -80.0)
+
+			//Translate for camera position
+			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+			//Scale for camera zoom
+			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
 			// The screen should be avoided as a render source
 			// If I want the tiles to overlap the feet of the gopher, I'll need to
 			// Create another render source for the gopher to prevent conflicting render calls
 			// And then insert it into the painter's algorithm
-			screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], op)
+			screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], g.op)
 
 			// targetRect(player.target.actor.coord, imd, player.target.actor.faction)
 			// isoSquare(player.target.actor.coord, 3, imd, player.target.actor.faction)
@@ -121,38 +257,87 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		} else {
 			// DRAW WIDGETS
 			widget_coord := sub_vec64(a.coord, vec64{x: 0.0, y: -60.0})
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(widget_coord.x, widget_coord.y)
+
+			g.op.GeoM.Reset()
+			//Translate for isometric
+			g.op.GeoM.Translate(float64(widget_coord.x), float64(widget_coord.y))
+			//Translate for camera position
+			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+			//Scale for camera zoom
+			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
 
 			// raise y by 60 after i make a vec add fn
-			screen.DrawImage(a.anims[4][(a.frame+startingFrame)], op)
+			screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
 
 			// isoSquare(a.coord, 3, imd, neutral)
 		}
 	}
+
+	//Get the cursor position
+	mx, my := ebiten.CursorPosition()
+	//Offset for center
+	fmx := float64(mx) - float64(g.windowWidth)/2.0
+	fmy := float64(my) - float64(g.windowHeight)/2.0
+	// x, y := float64(mx)+float64(g.windowWidth/2.0), float64(my)+float64(g.windowHeight/2.0)
+	//Translate it to game coordinates
+	x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+
+	//Do a half tile mouse shift because of our perspective
+	x -= .5 * float64(g.tileSize)
+	y -= .5 * float64(g.tileSize)
+	//Convert isometric
+	imx, imy := isoToCartesian(x, y)
+
+	tileX := int(imx)
+	tileY := int(imy)
+	ebitenutil.DebugPrint(
+		screen,
+		fmt.Sprintf("TPS: %0.2f\n,Cursor World Pos: %.2v,%.2v\nPlayer Pos: %v, %v\n",
+			ebiten.CurrentTPS(),
+			tileX, tileY, player.x, player.y),
+	)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 800, 600
+	return windowWidth, windowHeight
 }
 
 func main() {
-	ebiten.SetWindowSize(800, 600)
+	g := &Game{
+		Name:         "Diabgo",
+		windowWidth:  1280,
+		windowHeight: 720,
+		tileSize:     64,
+		CamPosX:      0,
+		CamPosY:      0,
+		CamSpeed:     500,
+		CamZoom:      1,
+		CamZoomSpeed: 1.2,
+		op:           &ebiten.DrawImageOptions{},
+		drawToBuffer: true,
+	}
+
+	g.buffer, _ = ebiten.NewImage(g.windowWidth, g.windowHeight, ebiten.FilterDefault)
+
+	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Diabgo")
 
-	if err := ebiten.RunGame(&Game{}); err != nil {
+	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
+
 }
 
-func cartesianToIso(pt vec64) vec64 {
-	return vec64{x: (pt.x - pt.y) * (tileSize / 2.0), y: (pt.x + pt.y) * (tileSize / 4.0)}
+func cartesianToIso(x, y float64) (float64, float64) {
+	rx := (x - y) * float64(tileSize/2)
+	ry := (x + y) * float64(tileSize/4)
+	return rx, ry
 }
 
-func isoToCartesian(pt vec64) vec64 {
-	x := pt.x*(2.0/tileSize) + pt.y*(4.0/tileSize)
-	y := ((pt.y * 4.0 / tileSize) - x) / 2.0
-	return vec64{x: x + y, y: y}
+func isoToCartesian(x, y float64) (float64, float64) {
+	rx := (x/float64(tileSize/2) + y/float64(tileSize/4)) / 2
+	ry := (y/float64(tileSize/4) - (x / float64(tileSize/2))) / 2
+	return rx, ry
 }
 
 // func isoSquare(centerXY vec64, size int, imd *imdraw.IMDraw, faction int) {

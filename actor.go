@@ -16,10 +16,10 @@ const (
 const (
 	activate = iota
 	dead
-	walk
 	attack
-	idle
+	walk
 	cast
+	idle
 )
 
 const (
@@ -56,7 +56,7 @@ func spawn_actor(x int, y int, name string, anims map[int][]*ebiten.Image) *acto
 	a.frame = 0
 	a.direction = 0
 
-	a.coord = cartesianToIso(vec64{x: float64(a.x), y: float64(a.y)})
+	a.coord.x, a.coord.y = cartesianToIso(float64(a.x), float64(a.y))
 	a.effects = map[string]struct{}{}
 	a.state = idle
 	return &a
@@ -104,14 +104,15 @@ func wayfind(x1 int, y1 int, x2 int, y2 int) int {
 		d = 6
 	case xy_diff.x == 0 && xy_diff.y == -1:
 		d = 2
+	// UP
 	case xy_diff.x == 1 && xy_diff.y == 1:
-		d = 7
-	case xy_diff.x == -1 && xy_diff.y == 1:
-		d = 1
-	case xy_diff.x == 1 && xy_diff.y == -1:
 		d = 5
-	case xy_diff.x == -1 && xy_diff.y == -1:
+	case xy_diff.x == -1 && xy_diff.y == 1:
+		d = 7
+	case xy_diff.x == 1 && xy_diff.y == -1:
 		d = 3
+	case xy_diff.x == -1 && xy_diff.y == -1:
+		d = 1
 	}
 	return d
 }

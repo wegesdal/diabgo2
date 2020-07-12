@@ -37,9 +37,9 @@ func spawn_character(a *actor) *character {
 
 func step_forward(a *actor, path []*node) {
 	if len(path) > 0 {
-		i := isoToCartesian(a.coord)
+		ix, iy := isoToCartesian(a.coord.x, a.coord.y)
 		// don't update next block until close
-		if math.Pow(i.x-float64(a.x), 2.0)+math.Pow(i.y-float64(a.y), 2.0) < 1 {
+		if math.Pow(ix-float64(a.x), 2.0)+math.Pow(iy-float64(a.y), 2.0) < 1 {
 
 			a.direction = wayfind(a.x, a.y, path[len(path)-1].x, path[len(path)-1].y)
 			a.x = path[len(path)-1].x
