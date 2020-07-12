@@ -21,9 +21,16 @@ var levelData [32][32]*node
 var endOfTheRoad *node
 var tiles []*ebiten.Image
 
+var playerSheet *ebiten.Image
+
 func init() {
 	var err error
 	tilesImage, _, err = ebitenutil.NewImageFromFile("dawnblocker.png", ebiten.FilterDefault)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	playerSheet, _, err = ebitenutil.NewImageFromFile("gopher8.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,11 +73,11 @@ func main() {
 }
 
 func cartesianToIso(pt vec64) vec64 {
-	return vec64{x: (pt.x - pt.y) * (tileSize / 2), y: (pt.x + pt.y) * (tileSize / 4)}
+	return vec64{x: (pt.x - pt.y) * (tileSize / 2.0), y: (pt.x + pt.y) * (tileSize / 4.0)}
 }
 
 func isoToCartesian(pt vec64) vec64 {
-	x := pt.x*(2.0/tileSize) + pt.y*(4/tileSize)
-	y := ((pt.y * 4.0 / tileSize) - x) / 2
+	x := pt.x*(2.0/tileSize) + pt.y*(4.0/tileSize)
+	y := ((pt.y * 4.0 / tileSize) - x) / 2.0
 	return vec64{x: x + y, y: y}
 }
