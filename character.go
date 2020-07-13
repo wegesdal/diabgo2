@@ -39,7 +39,7 @@ func step_forward(a *actor, path []*node) {
 	if len(path) > 0 {
 		ix, iy := isoToCartesian(a.coord.x, a.coord.y)
 		// don't update next block until close
-		if math.Pow(ix-float64(a.x), 2.0)+math.Pow(iy-float64(a.y), 2.0) < 1 {
+		if math.Pow(ix-float64(a.x), 2.0)+math.Pow(iy-float64(a.y), 2.0) < 0.5 {
 
 			a.direction = wayfind(a.x, a.y, path[len(path)-1].x, path[len(path)-1].y)
 			a.x = path[len(path)-1].x
@@ -94,17 +94,20 @@ func characterStateMachine(characters []*character, levelData [32][32]*node) {
 		d := sub_vec64(c.target.actor.coord, c.actor.coord)
 		d_square := d.x*d.x + d.y*d.y
 
+		ix, iy := isoToCartesian(c.actor.coord.x, c.actor.coord.y)
 		if c.actor.state == idle {
 
 			// if actor has not reached destination, walk
-			if c.dest.x != c.actor.x || c.dest.y != c.actor.y || c.target != c {
+
+			if c.dest.x != int(ix+0.5) && c.dest.y != int(iy+0.5) || c.target != c {
 				c.actor.state = walk
 			}
 
 		} else if c.actor.state == walk {
 
 			// if actor has reached destination, idle
-			if c.dest.x == c.actor.x && c.dest.y == c.actor.y {
+
+			if c.dest.x == int(ix+0.5) && c.dest.y == int(iy+0.5) {
 				c.actor.state = idle
 			}
 
@@ -147,7 +150,7 @@ func characterStateMachine(characters []*character, levelData [32][32]*node) {
 	}
 }
 
-func drawHealthPlates(screen *ebiten.Image, characters []*character) {
+func drawHealthPlates(g *Game, screen *ebiten.Image, characters []*character) {
 	for _, c := range characters {
 		// total length of health plate
 		length := 40.0
@@ -155,12 +158,11 @@ func drawHealthPlates(screen *ebiten.Image, characters []*character) {
 		bars := c.maxhp / 10
 		// length of a single bar
 		bar_length := length / float64(bars)
-		z := 20.0
-		start_X := c.actor.coord.x - z
+		start_X := c.actor.coord.x - g.CamPosX + 1280/2
 
 		if c.hp > 0 {
 			for i := 0; i < bars; i++ {
-				verticalOffset := 96.0
+				verticalOffset := g.CamPosY + 300
 				x1 := start_X + float64(i)*bar_length + 1
 				y := c.actor.coord.y + verticalOffset
 				if i*10 <= c.hp && (i+1)*10 > c.hp {

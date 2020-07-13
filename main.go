@@ -86,7 +86,6 @@ func init() {
 	player.arange = 5000.0
 	actors = append(actors, act)
 	characters = append(characters, player)
-
 }
 
 func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (float64, float64) {
@@ -100,7 +99,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	for _, c := range characters {
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
-		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.08)
+		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
 	}
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
@@ -183,9 +182,6 @@ func (g *Game) Update(screen *ebiten.Image) error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.buffer.Clear()
 	screen.Fill(color.RGBA{0x10, 0x10, 0x10, 1})
-	// ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.CurrentFPS()))
-
-	// drawHealthPlates(screen, characters)
 
 	for x := 0; x < len(levelData[0]); x++ {
 		for y := 0; y < len(levelData[0]); y++ {
@@ -221,19 +217,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// widgets will have an anims length of 1
 		startingFrame = a.direction * 10
 
-		// g.op.GeoM.Reset()
-		// //Translate for isometric
-		// // g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-		// //Translate for camera position
-		// g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-		// //Scale for camera zoom
-		// g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
-
 		if len(a.anims) == 6 {
 			g.op.GeoM.Reset()
 			//Translate for isometric
 			g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-			g.op.GeoM.Translate(-96.0, -96.0)
+			g.op.GeoM.Translate(-112.0, -96.0)
 
 			//Translate for camera position
 			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
@@ -268,6 +256,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			// isoSquare(a.coord, 3, imd, neutral)
 		}
 	}
+	drawHealthPlates(g, screen, characters)
 
 	//Get the cursor position
 	mx, my := ebiten.CursorPosition()
@@ -282,16 +271,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	x -= .5 * float64(g.tileSize)
 	y -= .5 * float64(g.tileSize)
 	//Convert isometric
-	imx, imy := isoToCartesian(x, y)
+	// imx, imy := isoToCartesian(x, y)
 
-	tileX := int(imx)
-	tileY := int(imy)
+	// tileX := int(imx)
+	// tileY := int(imy)
 	ebitenutil.DebugPrint(
 		screen,
-		fmt.Sprintf("TPS: %0.2f\n,Cursor World Pos: %.2v,%.2v\nPlayer Pos: %v, %v\n",
-			ebiten.CurrentTPS(),
-			tileX, tileY, player.actor.x, player.actor.y),
-	)
+		fmt.Sprintf("TPS: %0.2f\n", ebiten.CurrentTPS()))
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
