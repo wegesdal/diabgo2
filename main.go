@@ -67,7 +67,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	playerSheet, _, err = ebitenutil.NewImageFromFile("gopher8.png", ebiten.FilterDefault)
+	playerSheet, _, err = ebitenutil.NewImageFromFile("floyd.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
