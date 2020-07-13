@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"math/rand"
 
@@ -32,6 +33,7 @@ const (
 	grass_tile = iota
 	dirt_tile
 	road_tile
+	cobble_tile
 	bridge_tile
 	river_tile
 	block_tile1
@@ -56,6 +58,11 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	// road
 	sx = 2208
 	sy = 320
+	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
+
+	// cobble
+	sx = 128
+	sy = 256
 	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
 
 	// bridge
@@ -87,13 +94,28 @@ func generateMap() ([32][32]*node, *node) {
 
 	gradient := generateGradient()
 
+	minimum := 0.0
+	maximum := 0.0
+
 	for x := 0; x < 32; x++ {
 		for y := 0; y < 32; y++ {
 			noise := perlin(float64(x), float64(y), gradient)
-			if noise > 0 {
-				levelData[x][y] = &node{x: x, y: y, tile: grass_tile}
-			} else if noise > -0.5 {
+			if noise > maximum {
+				maximum = noise
+			}
+			if noise < minimum {
+				minimum = noise
+			}
+			if noise > 1000.0 {
+				levelData[x][y] = &node{x: x, y: y, tile: river_tile}
+			} else if noise > 0.0 {
 				levelData[x][y] = &node{x: x, y: y, tile: dirt_tile}
+			} else if noise > -40.0 {
+				levelData[x][y] = &node{x: x, y: y, tile: grass_tile}
+			} else if noise > -60.0 {
+				levelData[x][y] = &node{x: x, y: y, tile: cobble_tile}
+			} else if noise > -500.0 {
+				levelData[x][y] = &node{x: x, y: y, tile: block_tile1}
 			} else {
 				levelData[x][y] = &node{x: x, y: y, tile: block_tile2}
 			}
@@ -104,13 +126,13 @@ func generateMap() ([32][32]*node, *node) {
 			}
 		}
 	}
-
+	fmt.Printf("max: %f\nmin: %f\n", maximum, minimum)
 	// make some walls
-	for i := 0; i < 10; i++ {
-		start_x := rand.Intn(25) + 4
-		start_y := rand.Intn(25) + 4
-		levelData = wall_gen(start_x, start_y, levelData)
-	}
+	// for i := 0; i < 10; i++ {
+	// 	start_x := rand.Intn(25) + 4
+	// 	start_y := rand.Intn(25) + 4
+	// 	levelData = wall_gen(start_x, start_y, levelData)
+	// }
 
 	// generate a path
 	road_start := &node{x: rand.Intn(31), y: 0}

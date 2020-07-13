@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image/color"
 	"log"
-	"math"
 	"math/rand"
 	"time"
 
@@ -43,14 +42,14 @@ var (
 )
 
 type Game struct {
-	Name          string //Name of the game ("gollercoaster for now")
-	windowWidth   int
-	windowHeight  int
-	tileSize      int
-	CamPosX       float64
-	CamPosY       float64
-	CamSpeed      float64
-	CamZoom       float64
+	Name         string //Name of the game ("gollercoaster for now")
+	windowWidth  int
+	windowHeight int
+	tileSize     int
+	CamPosX      float64
+	CamPosY      float64
+	CamSpeed     float64
+	// CamZoom       float64
 	CamZoomSpeed  float64
 	op            *ebiten.DrawImageOptions
 	buffer        *ebiten.Image
@@ -67,7 +66,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	playerSheet, _, err = ebitenutil.NewImageFromFile("floyd.png", ebiten.FilterDefault)
+	playerSheet, _, err = ebitenutil.NewImageFromFile("fs_gopher.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,31 +103,31 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
 
-	dt := 2.0 / 60
+	// dt := 2.0 / 60
 	// Write your game's logical update.
 
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
-		g.CamPosX -= g.CamSpeed * dt / g.CamZoom
-		g.drawToBuffer = true
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.CamPosX += g.CamSpeed * dt / g.CamZoom
-		g.drawToBuffer = true
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
-		g.CamPosY -= g.CamSpeed * dt / g.CamZoom
-		g.drawToBuffer = true
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
-		g.CamPosY += g.CamSpeed * dt / g.CamZoom
-		g.drawToBuffer = true
-	}
-	_, sY := ebiten.Wheel()
-	g.CamZoom *= math.Pow(g.CamZoomSpeed, sY)
+	// if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
+	// 	g.CamPosX -= g.CamSpeed * dt / g.CamZoom
+	// 	g.drawToBuffer = true
+	// }
+	// if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
+	// 	g.CamPosX += g.CamSpeed * dt / g.CamZoom
+	// 	g.drawToBuffer = true
+	// }
+	// if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
+	// 	g.CamPosY -= g.CamSpeed * dt / g.CamZoom
+	// 	g.drawToBuffer = true
+	// }
+	// if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
+	// 	g.CamPosY += g.CamSpeed * dt / g.CamZoom
+	// 	g.drawToBuffer = true
+	// }
+	// _, sY := ebiten.Wheel()
+	// g.CamZoom *= math.Pow(g.CamZoomSpeed, sY)
 
-	if sY != 0 {
-		g.drawToBuffer = true
-	}
+	// if sY != 0 {
+	// 	g.drawToBuffer = true
+	// }
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		// fmt.Printf("x: %d, y: %d", mx, my)
@@ -143,7 +142,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		fmy := float64(my) - float64(g.windowHeight)/2.0
 		// x, y := float64(mx)+float64(g.windowWidth/2.0), float64(my)+float64(g.windowHeight/2.0)
 		//Translate it to game coordinates
-		x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+		// x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+
+		x, y := fmx+g.CamPosX, fmy-g.CamPosY
 
 		//Do a half tile mouse shift because of our perspective
 		x -= .5 * float64(g.tileSize)
@@ -192,7 +193,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			//Translate for camera position
 			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 			//Scale for camera zoom
-			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+			// g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
 			//Translate for center of screen offset
 			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 			if levelData[x][y].visible {
@@ -226,7 +227,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			//Translate for camera position
 			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 			//Scale for camera zoom
-			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+			// g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
 			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
 			// The screen should be avoided as a render source
@@ -248,7 +249,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			//Translate for camera position
 			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 			//Scale for camera zoom
-			g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
+			// g.op.GeoM.Scale(g.CamZoom, g.CamZoom)
 
 			// raise y by 60 after i make a vec add fn
 			screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
@@ -259,13 +260,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	drawHealthPlates(g, screen, characters)
 
 	//Get the cursor position
-	mx, my := ebiten.CursorPosition()
+	// mx, my := ebiten.CursorPosition()
 	//Offset for center
-	fmx := float64(mx) - float64(g.windowWidth)/2.0
-	fmy := float64(my) - float64(g.windowHeight)/2.0
+	// fmx := float64(mx) - float64(g.windowWidth)/2.0
+	// fmy := float64(my) - float64(g.windowHeight)/2.0
 	// x, y := float64(mx)+float64(g.windowWidth/2.0), float64(my)+float64(g.windowHeight/2.0)
 	//Translate it to game coordinates
-	x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+	// x, y := (float64(fmx/g.CamZoom) + g.CamPosX), float64(fmy/g.CamZoom)-g.CamPosY
+	x, y := g.CamPosX, -g.CamPosY
 
 	//Do a half tile mouse shift because of our perspective
 	x -= .5 * float64(g.tileSize)
@@ -293,7 +295,7 @@ func main() {
 		CamPosX:      0,
 		CamPosY:      0,
 		CamSpeed:     500,
-		CamZoom:      1,
+		// CamZoom:      1,
 		CamZoomSpeed: 1.2,
 		op:           &ebiten.DrawImageOptions{},
 		drawToBuffer: true,
