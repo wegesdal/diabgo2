@@ -8,12 +8,14 @@ def filter_hidden(s):
   else:
     return True
 
-path = "/Users/wegesdal/Documents/blender/gopher/render/"
+name = "diabgopher"
+
+path = "/Users/wegesdal/Documents/blender/"+name+"/render/"
 poses = [q for q in filter(filter_hidden, [p for p in os.listdir(path)])]
 
 print(poses)
 
-sprite_size = 256
+sprite_size = 512
 max_height = sprite_size * len(poses) * 4
 print("max_height: {}".format(max_height))
 number_of_angles = 8
@@ -36,4 +38,4 @@ for i in range(len(poses)):
       x_offset = (a%2)*num_frames*sprite_size + f*sprite_size
       new_im.paste(pics[f], (x_offset,y_offset))
 
-new_im.save('gopher.png')
+new_im.save('assets/sprites/'+name+'.png')

@@ -88,7 +88,7 @@ func remove(s []*node, i int) []*node {
 	return s[:len(s)-1]
 }
 
-func Astar(start *node, end *node, grid [32][32]*node) []*node {
+func Astar(start *node, end *node, grid [32][32]*node, diagonals bool) []*node {
 	var open = []*node{}
 	var closed = []*node{}
 	open = append(open, start)
@@ -107,10 +107,13 @@ func Astar(start *node, end *node, grid [32][32]*node) []*node {
 			&node{x: open[c].x - 1, y: open[c].y},
 			&node{x: open[c].x, y: open[c].y + 1},
 			&node{x: open[c].x, y: open[c].y - 1},
-			&node{x: open[c].x + 1, y: open[c].y + 1},
-			&node{x: open[c].x - 1, y: open[c].y - 1},
-			&node{x: open[c].x + 1, y: open[c].y - 1},
-			&node{x: open[c].x - 1, y: open[c].y + 1},
+		}
+
+		if diagonals {
+			neighbors = append(neighbors, &node{x: open[c].x + 1, y: open[c].y + 1})
+			neighbors = append(neighbors, &node{x: open[c].x - 1, y: open[c].y - 1})
+			neighbors = append(neighbors, &node{x: open[c].x + 1, y: open[c].y - 1})
+			neighbors = append(neighbors, &node{x: open[c].x - 1, y: open[c].y + 1})
 		}
 
 		closed = append(closed, open[c])
@@ -126,7 +129,11 @@ func Astar(start *node, end *node, grid [32][32]*node) []*node {
 					}
 				} else {
 					n.G = closed[len(closed)-1].G + 1
-					n.H = diagonal_distance(*n, *end)
+					if diagonals {
+						n.H = diagonal_distance(*n, *end)
+					} else {
+						n.H = manhattan_distance(*n, *end)
+					}
 					n.parent = closed[len(closed)-1]
 					open = append(open, n)
 				}

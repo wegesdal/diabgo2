@@ -4,8 +4,6 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"golang.org/x/image/colornames"
 )
 
@@ -46,10 +44,6 @@ func step_forward(a *actor, path []*node) {
 			a.y = path[len(path)-1].y
 		}
 	}
-}
-
-func sub_vec64(a vec64, b vec64) vec64 {
-	return vec64{x: a.x - b.x, y: a.y - b.y}
 }
 
 func characterStateMachine(characters []*character, levelData [32][32]*node) {
@@ -118,7 +112,7 @@ func characterStateMachine(characters []*character, levelData [32][32]*node) {
 					c.actor.direction = wayfind(c.actor.x, c.actor.y, c.target.actor.x, c.target.actor.y)
 				} else {
 					// otherwise move towards target unless player (let the player control their movement)
-					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, levelData)
+					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, levelData, true)
 					if len(path) > 0 {
 						if path[len(path)-1].x != c.target.actor.x || path[len(path)-1].y != c.target.actor.y {
 							step_forward(c.actor, path)
@@ -127,7 +121,7 @@ func characterStateMachine(characters []*character, levelData [32][32]*node) {
 				}
 				// if no target
 			} else {
-				path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData)
+				path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData, true)
 				step_forward(c.actor, path)
 			}
 
@@ -150,39 +144,39 @@ func characterStateMachine(characters []*character, levelData [32][32]*node) {
 	}
 }
 
-func drawHealthPlates(g *Game, screen *ebiten.Image, characters []*character) {
-	for _, c := range characters {
-		// total length of health plate
-		length := 40.0
-		// number of bars to represent health (10 hp per bar)
-		bars := c.maxhp / 10
-		// length of a single bar
-		bar_length := length / float64(bars)
-		start_X := c.actor.coord.x - g.CamPosX + 1280/2
+// func drawHealthPlates(g *Game, screen *ebiten.Image, characters []*character) {
+// 	for _, c := range characters {
+// 		// total length of health plate
+// 		length := 40.0
+// 		// number of bars to represent health (10 hp per bar)
+// 		bars := c.maxhp / 10
+// 		// length of a single bar
+// 		bar_length := length / float64(bars)
+// 		start_X := c.actor.coord.x - g.CamPosX + 1280/2
 
-		if c.hp > 0 {
-			for i := 0; i < bars; i++ {
-				verticalOffset := g.CamPosY + 300
-				x1 := start_X + float64(i)*bar_length + 1
-				y := c.actor.coord.y + verticalOffset
-				if i*10 <= c.hp && (i+1)*10 > c.hp {
-					f := float64(10-c.hp%10) / 10
-					x2 := start_X + float64(i+1)*bar_length - f*bar_length
-					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, light))
-					x1 = x2
-					x2 = start_X + float64(i+1)*bar_length - 1
-					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, dark))
-				} else {
-					// draw the whole bar
-					x2 := start_X + float64(i+1)*bar_length - 1
-					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, light))
-				}
-			}
-		}
+// 		if c.hp > 0 {
+// 			for i := 0; i < bars; i++ {
+// 				verticalOffset := g.CamPosY + 300
+// 				x1 := start_X + float64(i)*bar_length + 1
+// 				y := c.actor.coord.y + verticalOffset
+// 				if i*10 <= c.hp && (i+1)*10 > c.hp {
+// 					f := float64(10-c.hp%10) / 10
+// 					x2 := start_X + float64(i+1)*bar_length - f*bar_length
+// 					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, light))
+// 					x1 = x2
+// 					x2 = start_X + float64(i+1)*bar_length - 1
+// 					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, dark))
+// 				} else {
+// 					// draw the whole bar
+// 					x2 := start_X + float64(i+1)*bar_length - 1
+// 					ebitenutil.DrawLine(screen, x1, y, x2, y, factionColor(c.actor.faction, light))
+// 				}
+// 			}
+// 		}
 
-	}
+// 	}
 
-}
+// }
 
 func removeDeadActors(c *character, actors []*actor) []*actor {
 	for j, a := range actors {

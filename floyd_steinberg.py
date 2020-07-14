@@ -1,4 +1,6 @@
+import PIL
 from PIL import Image
+
 import math
 
 palette = [
@@ -21,12 +23,15 @@ palette = [
     [222, 248, 214]
 ];
 
+PIL.Image.MAX_IMAGE_PIXELS = 125829121
 
-height = 256*24
-width = 256*20
-im = Image.open("gopher.png")
-print(im.size)
-orig = Image.open("gopher.png")
+path = "assets/sprites/"
+
+name = "doodads.png"
+im = Image.open(path+name)
+orig = Image.open(path+name)
+
+width, height = im.size
 new_image = Image.new('RGBA', (width, height))
 
 def distance(r1, g1, b1, r2, g2, b2):
@@ -84,7 +89,7 @@ for y in range(height):
                         # TOP EDGE BLACK
                         new_image.putpixel((x, y-1), (0,0,0,255))
 
-new_image.show()
+new_image.save(path+'fs_'+name)
 
 
     

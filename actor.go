@@ -14,12 +14,12 @@ const (
 )
 
 const (
-	activate = iota
-	dead
+	dead = iota
+	idle
 	attack
 	walk
 	cast
-	idle
+	activate
 )
 
 const (
