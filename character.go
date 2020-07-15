@@ -1,10 +1,7 @@
 package main
 
 import (
-	"image/color"
 	"math"
-
-	"golang.org/x/image/colornames"
 )
 
 type character struct {
@@ -212,26 +209,4 @@ func removeDeadCharacters(actors []*actor, characters []*character) ([]*actor, [
 		}
 	}
 	return actors, characters
-}
-
-func factionColor(faction int, variant int) color.RGBA {
-	var color color.RGBA
-	if variant == light {
-		if faction == friendly {
-			color = colornames.Lightgreen
-		} else if faction == neutral {
-			color = colornames.Yellow
-		} else if faction == hostile {
-			color = colornames.Red
-		}
-	} else if variant == dark {
-		if faction == friendly {
-			color = colornames.Darkgreen
-		} else if faction == neutral {
-			color = colornames.Orange
-		} else if faction == hostile {
-			color = colornames.Darkred
-		}
-	}
-	return color
 }

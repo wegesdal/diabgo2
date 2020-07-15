@@ -2,8 +2,10 @@ package main
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten"
+	"golang.org/x/image/colornames"
 )
 
 const (
@@ -115,4 +117,26 @@ func wayfind(x1 int, y1 int, x2 int, y2 int) int {
 		d = 1
 	}
 	return d
+}
+
+func factionColor(faction int, variant int) color.RGBA {
+	var color color.RGBA
+	if variant == light {
+		if faction == friendly {
+			color = colornames.Lightgreen
+		} else if faction == neutral {
+			color = colornames.Orange
+		} else if faction == hostile {
+			color = colornames.Red
+		}
+	} else if variant == dark {
+		if faction == friendly {
+			color = colornames.Darkgreen
+		} else if faction == neutral {
+			color = colornames.Orange
+		} else if faction == hostile {
+			color = colornames.Darkred
+		}
+	}
+	return color
 }

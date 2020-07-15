@@ -3,15 +3,19 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"io/ioutil"
 	"log"
 	"math"
 	"math/rand"
 	"sort"
 	"time"
 
+	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/inpututil"
+	"github.com/hajimehoshi/ebiten/text"
+	"golang.org/x/image/font"
 )
 
 type vec64 struct {
@@ -47,6 +51,11 @@ var (
 	second        = time.Tick(time.Second)
 )
 
+var (
+	sampleText  = `Spooky Forest`
+	exocet_face font.Face
+)
+
 type Game struct {
 	Name          string
 	windowWidth   int
@@ -66,8 +75,21 @@ type Game struct {
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
+	exocet_ttf, err := ioutil.ReadFile("assets/fonts/ExocetLight_Medium.ttf")
+
+	tt, err := truetype.Parse(exocet_ttf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	const dpi = 72
+	exocet_face = truetype.NewFace(tt, &truetype.Options{
+		Size:    24,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+
 	// LOAD ASSETS
-	var err error
 	tilesImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/dawnblocker.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
@@ -128,6 +150,14 @@ func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (flo
 	return (1-t)*v0x + t*v1x, (1-t)*v0y + t*v1y
 }
 
+func inMapRange(x int, y int, levelData [2][32][32]*node) bool {
+	if x >= 0 && x < len(levelData[0]) && y >= 0 && y < len(levelData[0]) {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	clearVisibility(levelData[0])
@@ -146,53 +176,62 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		player.target = player
 
 		tx, ty := getTileXY(g)
+		if inMapRange(tx, ty, levelData) {
 
-		for _, c := range characters {
-			diffX, diffY := tx-player.target.actor.x, ty-player.target.actor.y
-			if diffX*diffX < 2.0 && diffY*diffY < 4.0 && c != player {
-				player.target = c
-				break
+			for _, c := range characters {
+				diffX, diffY := tx-player.target.actor.x, ty-player.target.actor.y
+				if diffX*diffX < 2.0 && diffY*diffY < 4.0 && c != player {
+					player.target = c
+					break
+				}
 			}
-		}
 
-		if tx < len(levelData[0]) && ty < len(levelData[0]) && tx >= 0 && ty >= 0 {
-			player.dest = &node{x: tx, y: ty}
+			if tx < len(levelData[0]) && ty < len(levelData[0]) && tx >= 0 && ty >= 0 {
+				player.dest = &node{x: tx, y: ty}
+			}
 		}
 	}
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
 
 		tx, ty := getTileXY(g)
-		if levelData[0][tx][ty].walkable {
-			levelData[1][tx][ty].tile = 1
+		if inMapRange(tx, ty, levelData) {
+			//crashes if selection out of range
+			if levelData[0][tx][ty].walkable {
+				levelData[1][tx][ty].tile = rand.Intn(31)
+			}
 		}
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key3) {
 
 		tx, ty := getTileXY(g)
-		creepAnim := generateCharacterSprites(creepSheet, 256)
-		creepActor := spawn_actor(tx, ty, "creep", creepAnim)
-		c := spawn_character(creepActor)
-		c.dest = endOfTheRoad
-		c.actor.faction = hostile
-		c.prange = 8000.0
-		c.arange = 5000.0
-		actors = append(actors, creepActor)
-		characters = append(characters, c)
+		if inMapRange(tx, ty, levelData) {
+			creepAnim := generateCharacterSprites(creepSheet, 256)
+			creepActor := spawn_actor(tx, ty, "creep", creepAnim)
+			c := spawn_character(creepActor)
+			c.dest = endOfTheRoad
+			c.actor.faction = hostile
+			c.prange = 8000.0
+			c.arange = 5000.0
+			actors = append(actors, creepActor)
+			characters = append(characters, c)
+		}
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key4) {
 
 		tx, ty := getTileXY(g)
 		bossAnim := generateCharacterSprites(bossSheet, 512)
-		bossActor := spawn_actor(tx, ty, "boss", bossAnim)
-		c := spawn_character(bossActor)
-		c.dest = endOfTheRoad
-		c.actor.faction = hostile
-		c.prange = 8000.0
-		c.arange = 5000.0
-		actors = append(actors, bossActor)
-		characters = append(characters, c)
+		if inMapRange(tx, ty, levelData) {
+			bossActor := spawn_actor(tx, ty, "boss", bossAnim)
+			c := spawn_character(bossActor)
+			c.dest = endOfTheRoad
+			c.actor.faction = hostile
+			c.prange = 8000.0
+			c.arange = 5000.0
+			actors = append(actors, bossActor)
+			characters = append(characters, c)
+		}
 	}
 
 	if g.count%3 == 0 {
@@ -250,8 +289,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				t := tiles[levelData[0][x][y].tile]
 				screen.DrawImage(t, g.op)
 
-				d := doodads[0]
-				if levelData[1][x][y].tile == 1 {
+				d := doodads[levelData[1][x][y].tile]
+				if levelData[1][x][y].tile > 0 {
 					g.op.GeoM.Translate(-256.0, -400.0)
 					screen.DrawImage(d, g.op)
 					drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
@@ -300,7 +339,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				g.op.GeoM.Reset()
 				// DRAW WIDGETS
 				g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-				g.op.GeoM.Translate(-124.0, -72.0)
+				g.op.GeoM.Translate(-96.0, -96.0)
 				g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 				g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
@@ -325,10 +364,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// drawHealthPlates(g, screen, characters)
 
-	for _, a := range actors {
+	// for _, a := range actors {
 
-		isoSquare(g, screen, a.coord, 2.0, a.faction)
-	}
+	// 	isoSquare(g, screen, a.coord, 2.0, a.faction)
+	// }
+
+	// Draw the sample text
+	text.Draw(screen, sampleText, exocet_face, g.windowWidth-230, 30, color.White)
 
 	ebitenutil.DebugPrint(
 		screen,
@@ -342,8 +384,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	g := &Game{
 		Name:         "Diabgo",
-		windowWidth:  640,
-		windowHeight: 480,
+		windowWidth:  1280,
+		windowHeight: 900,
 		tileSize:     64,
 		CamPosX:      0,
 		CamPosY:      0,
@@ -371,33 +413,6 @@ func isoToCartesian(x, y float64) (float64, float64) {
 	ry := (y/float64(tileSize/4) - (x / float64(tileSize/2))) / 2
 	return rx, ry
 }
-
-// func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, size int, faction int) {
-// 	// 	imd.Color = factionColor(faction, light)
-// 	// y_offset := -10.0
-// 	// 	centerXY = pixel.Vec.Add(centerXY, pixel.Vec{X: 0, Y: y_offset})
-
-// 	// WORLD COORDINATES
-// 	v1x, v1y := cartesianToIso(-1, 0)
-// 	v2x, v2y := cartesianToIso(1, 0)
-// 	v3x, v3y := cartesianToIso(1, -2)
-
-// 	v4x, v4y := cartesianToIso(-1, 1)
-// 	v5x, v5y := cartesianToIso(2, 1)
-// 	v6x, v6y := cartesianToIso(2, -2)
-
-// 	// polygon := []vec64{vec64{x: v1x, y: v1y}, vec64{x: v2x, y: v2y}, vec64{x: v3x, y: v3y}, vec64{x: v4x, y: v4y}, vec64{x: v5x, y: v5y}, vec64{x: v6x, y: v6y}}
-
-// 	// VIEWPORT COORDINATES
-// 	cx, cy := centerXY.x-g.CamPosX+float64(g.windowWidth/2.0), centerXY.y+g.CamPosY+float64(g.windowHeight/2.0)+40.0
-
-// 	ebitenutil.DrawLine(screen, v1x+cx, v1y+cy, v2x+cx, v2y+cy, factionColor(faction, light))
-// 	ebitenutil.DrawLine(screen, v2x+cx, v2y+cy, v3x+cx, v3y+cy, factionColor(faction, light))
-
-// 	ebitenutil.DrawLine(screen, v4x+cx, v4y+cy, v5x+cx, v5y+cy, factionColor(faction, light))
-// 	ebitenutil.DrawLine(screen, v5x+cx, v5y+cy, v6x+cx, v6y+cy, factionColor(faction, light))
-
-// }
 
 // adapted from C http://web.archive.org/web/20110314030147/http://paulbourke.net/geometry/insidepoly/
 

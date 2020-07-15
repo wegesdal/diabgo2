@@ -26,6 +26,8 @@ func terminalStateMachine(actors []*actor) {
 						player.state = activate
 						player.x = a.x
 						player.y = a.y
+						// jostling the coord below makes the depth sort put the player in front
+						player.coord.y += 15.0
 						player.direction = 4
 						a.frame = 0
 					} else {
