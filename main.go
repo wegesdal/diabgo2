@@ -15,6 +15,7 @@ import (
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"github.com/hajimehoshi/ebiten/inpututil"
 	"github.com/hajimehoshi/ebiten/text"
+	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
 )
 
@@ -175,22 +176,30 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		player.actor.state = walk
 		player.target = player
 
+		//Get the cursor position
+		mx, my := ebiten.CursorPosition()
+		//Offset for center
+		fmx := float64(mx) - float64(g.windowWidth)/2.0
+		fmy := float64(my) - float64(g.windowHeight)/2.0
+
+		x, y := fmx+g.CamPosX, fmy-g.CamPosY
+
+		offset := vec64{x: 32.0, y: -30.0}
+
+		for _, c := range characters {
+			diff := sub_vec64(c.actor.coord, vec64{x: x - offset.x, y: y - offset.y})
+			if math.Abs(diff.x) < 64 && math.Abs(diff.y) < 64 && c != player {
+				player.target = c
+				break
+			}
+
+		}
 		tx, ty := getTileXY(g)
 		if inMapRange(tx, ty, levelData) {
-
-			for _, c := range characters {
-				diffX, diffY := tx-player.target.actor.x, ty-player.target.actor.y
-				if diffX*diffX < 2.0 && diffY*diffY < 4.0 && c != player {
-					player.target = c
-					break
-				}
-			}
-
-			if tx < len(levelData[0]) && ty < len(levelData[0]) && tx >= 0 && ty >= 0 {
-				player.dest = &node{x: tx, y: ty}
-			}
+			player.dest = &node{x: tx, y: ty}
 		}
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
 
 		tx, ty := getTileXY(g)
@@ -299,11 +308,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 	}
 
+	for _, c := range characters {
+		if c == player.target {
+			isoSquare(g, screen, c.actor.coord, 2.0, c.actor.faction)
+			isoTargetDebug(g, screen, c.actor.coord)
+		}
+	}
+
 	// DRAW ACTORS
 	for _, a := range actors {
-
-		isoSquare(g, screen, a.coord, 2.0, a.faction)
-
 		startingFrame := 0
 		// DRAW CHARACTER
 		// the length of anims tells you if this is a character or item
@@ -466,6 +479,16 @@ func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, size int, faction 
 	ebitenutil.DrawLine(screen, v2x+cx, v2y+cy, v3x+cx, v3y+cy, factionColor(faction, light))
 	ebitenutil.DrawLine(screen, v3x+cx, v3y+cy, v4x+cx, v4y+cy, factionColor(faction, light))
 	ebitenutil.DrawLine(screen, v4x+cx, v4y+cy, v1x+cx, v1y+cy, factionColor(faction, light))
+}
+
+func isoTargetDebug(g *Game, screen *ebiten.Image, coord vec64) {
+
+	offset := vec64{x: 32.0, y: -30.0}
+
+	cx, cy := coord.x-g.CamPosX+float64(g.windowWidth/2.0)+offset.x, coord.y+g.CamPosY+float64(g.windowHeight/2.0)+offset.y
+
+	ebitenutil.DrawLine(screen, cx+64.0, cy-64.0, cx+64.0, cy+64.0, colornames.Pink)
+	ebitenutil.DrawLine(screen, cx-64.0, cy-64.0, cx-64.0, cy+64.0, colornames.Pink)
 }
 
 func findOpenNode(levelData [32][32]*node) *node {
