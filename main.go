@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/hajimehoshi/ebiten"
@@ -223,31 +225,36 @@ func getTileXY(g *Game) (int, int) {
 	return int(imx), int(imy)
 }
 
+type sprite struct {
+	yi   float64
+	pic  *ebiten.Image
+	geom ebiten.GeoM
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x10, 1})
 	// px, py := player.actor.coord.x, player.actor.coord.y
 
-	var drawLater [][2]*node
+	var drawLater []*sprite
 
 	for x := 0; x < len(levelData[0]); x++ {
 		for y := 0; y < len(levelData[0]); y++ {
 			if levelData[0][x][y].visible {
 				xi, yi := cartesianToIso(float64(x), float64(y))
-				if player.actor.coord.y > yi {
-					g.op.GeoM.Reset()
-					g.op.GeoM.Translate(float64(xi), float64(yi))
-					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
+				// if player.actor.coord.y > yi {
+				g.op.GeoM.Reset()
+				g.op.GeoM.Translate(float64(xi), float64(yi))
+				g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+				g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
-					t := tiles[levelData[0][x][y].tile]
-					screen.DrawImage(t, g.op)
-					d := doodads[0]
-					if levelData[1][x][y].tile == 1 {
-						g.op.GeoM.Translate(-256.0, -400.0)
-						screen.DrawImage(d, g.op)
-					}
-				} else {
-					drawLater = append(drawLater, [2]*node{levelData[0][x][y], levelData[1][x][y]})
+				t := tiles[levelData[0][x][y].tile]
+				screen.DrawImage(t, g.op)
+
+				d := doodads[0]
+				if levelData[1][x][y].tile == 1 {
+					g.op.GeoM.Translate(-256.0, -400.0)
+					screen.DrawImage(d, g.op)
+					drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
 				}
 			}
 		}
@@ -271,7 +278,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 				g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
 				if a.name == "boss" {
-					g.op.GeoM.Translate(-224.0, -192.0)
+					g.op.GeoM.Translate(-224.0, -300.0)
 				} else {
 					g.op.GeoM.Translate(-96.0, -128.0)
 				}
@@ -282,7 +289,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				// If I want the tiles to overlap the feet of the gopher, I'll need to
 				// Create another render source for the gopher to prevent conflicting render calls
 				// And then insert it into the painter's algorithm
-				screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], g.op)
+				// screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], g.op)
+
+				drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[a.state][(a.frame + startingFrame)], geom: g.op.GeoM})
 
 				// targetRect(player.target.actor.coord, imd, player.target.actor.faction)
 				// isoSquare(player.target.actor.coord, 3, imd, player.target.actor.faction)
@@ -296,29 +305,30 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
 				// raise y by 60 after i make a vec add fn
-				screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
+				//screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
+
+				drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[4][(a.frame + startingFrame)], geom: g.op.GeoM})
 
 			}
 		}
 	}
 
-	for _, layer := range drawLater {
-		xi, yi := cartesianToIso(float64(layer[0].x), float64(layer[0].y))
-		g.op.GeoM.Reset()
-		g.op.GeoM.Translate(float64(xi), float64(yi))
-		g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-		g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
-		t := tiles[layer[0].tile]
-		screen.DrawImage(t, g.op)
+	sort.Slice(drawLater[:], func(i, j int) bool {
+		return drawLater[i].yi < drawLater[j].yi
+	})
 
-		d := doodads[0]
-		if layer[1].tile == 1 {
-			g.op.GeoM.Translate(-256.0, -400.0)
-			screen.DrawImage(d, g.op)
-		}
+	for _, s := range drawLater {
+		g.op.GeoM.Reset()
+		g.op.GeoM = s.geom
+		screen.DrawImage(s.pic, g.op)
 	}
 
 	// drawHealthPlates(g, screen, characters)
+
+	for _, a := range actors {
+
+		isoSquare(g, screen, a.coord, 2.0, a.faction)
+	}
 
 	ebitenutil.DebugPrint(
 		screen,
@@ -362,16 +372,78 @@ func isoToCartesian(x, y float64) (float64, float64) {
 	return rx, ry
 }
 
+// func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, size int, faction int) {
+// 	// 	imd.Color = factionColor(faction, light)
+// 	// y_offset := -10.0
+// 	// 	centerXY = pixel.Vec.Add(centerXY, pixel.Vec{X: 0, Y: y_offset})
+
+// 	// WORLD COORDINATES
+// 	v1x, v1y := cartesianToIso(-1, 0)
+// 	v2x, v2y := cartesianToIso(1, 0)
+// 	v3x, v3y := cartesianToIso(1, -2)
+
+// 	v4x, v4y := cartesianToIso(-1, 1)
+// 	v5x, v5y := cartesianToIso(2, 1)
+// 	v6x, v6y := cartesianToIso(2, -2)
+
+// 	// polygon := []vec64{vec64{x: v1x, y: v1y}, vec64{x: v2x, y: v2y}, vec64{x: v3x, y: v3y}, vec64{x: v4x, y: v4y}, vec64{x: v5x, y: v5y}, vec64{x: v6x, y: v6y}}
+
+// 	// VIEWPORT COORDINATES
+// 	cx, cy := centerXY.x-g.CamPosX+float64(g.windowWidth/2.0), centerXY.y+g.CamPosY+float64(g.windowHeight/2.0)+40.0
+
+// 	ebitenutil.DrawLine(screen, v1x+cx, v1y+cy, v2x+cx, v2y+cy, factionColor(faction, light))
+// 	ebitenutil.DrawLine(screen, v2x+cx, v2y+cy, v3x+cx, v3y+cy, factionColor(faction, light))
+
+// 	ebitenutil.DrawLine(screen, v4x+cx, v4y+cy, v5x+cx, v5y+cy, factionColor(faction, light))
+// 	ebitenutil.DrawLine(screen, v5x+cx, v5y+cy, v6x+cx, v6y+cy, factionColor(faction, light))
+
+// }
+
+// adapted from C http://web.archive.org/web/20110314030147/http://paulbourke.net/geometry/insidepoly/
+
+func insidePolygon(polygon []vec64, N int, p vec64) bool {
+	counter := 0
+	var i int
+	var xinters float64
+	var p1, p2 vec64
+
+	p1 = polygon[0]
+	for i = 1; i <= N; i++ {
+		p2 = polygon[i%N]
+		if p.y > math.Min(p1.y, p2.y) {
+			if p.y <= math.Max(p1.y, p2.y) {
+				if p.x <= math.Max(p1.x, p2.x) {
+					if p1.y != p2.y {
+						xinters = (p.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y) + p1.x
+						if p1.x == p2.x || p.x <= xinters {
+
+							counter++
+						}
+					}
+				}
+			}
+		}
+		p1 = p2
+	}
+	var b bool
+	if counter%2 == 0 {
+		b = false
+	} else {
+		b = true
+	}
+	return b
+}
+
 func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, size int, faction int) {
 	// 	imd.Color = factionColor(faction, light)
 	hs := float64(size / 2)
 	// y_offset := -10.0
 	// 	centerXY = pixel.Vec.Add(centerXY, pixel.Vec{X: 0, Y: y_offset})
 
-	v1x, v1y := cartesianToIso(-hs, -hs-1)
-	v2x, v2y := cartesianToIso(-hs, hs-1)
-	v3x, v3y := cartesianToIso(hs, hs-1)
-	v4x, v4y := cartesianToIso(hs, -hs-1)
+	v1x, v1y := cartesianToIso(-hs, hs-1)
+	v2x, v2y := cartesianToIso(hs, hs-1)
+	v3x, v3y := cartesianToIso(hs, -hs-1)
+	v4x, v4y := cartesianToIso(-hs, -hs-1)
 
 	cx, cy := centerXY.x-g.CamPosX+float64(g.windowWidth/2.0), centerXY.y+g.CamPosY+float64(g.windowHeight/2.0)+40.0
 
