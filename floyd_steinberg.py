@@ -27,7 +27,7 @@ PIL.Image.MAX_IMAGE_PIXELS = 125829121
 
 path = "assets/sprites/"
 
-name = "doodads.png"
+name = "sphere_blue.png"
 im = Image.open(path+name)
 orig = Image.open(path+name)
 
