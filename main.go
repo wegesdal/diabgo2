@@ -380,17 +380,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Draw the sample text
 	text.Draw(screen, sampleText, exocet_face, g.windowWidth-230, 30, color.White)
 
+	// TODO: LERP THE RESOURCE GLOBE FRAMES
 	g.op.GeoM.Reset()
 	percentHealth := player.hp * 100 / player.maxhp
 	pixelsPerFrame := int(128 / 25)
-	healthGlobeFrame := 24 - (int(percentHealth / 4)) + 1
-	g.op.GeoM.Translate(0.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-284.0)
+	healthGlobeFrame := 25 - (int(percentHealth / 4))
+	g.op.GeoM.Translate(0.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
 	screen.DrawImage(healthGlobe[healthGlobeFrame], g.op)
 
 	g.op.GeoM.Reset()
 	percentMana := player.hp * 100 / player.maxhp
-	manaGlobeFrame := 24 - (int(percentMana / 4)) + 1
-	g.op.GeoM.Translate(float64(g.windowWidth)-128.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-284.0)
+	manaGlobeFrame := 25 - (int(percentMana / 4))
+	g.op.GeoM.Translate(float64(g.windowWidth)-128.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
 	screen.DrawImage(manaGlobe[manaGlobeFrame], g.op)
 
 	ebitenutil.DebugPrint(
@@ -405,8 +406,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	g := &Game{
 		Name:         "Diabgo",
-		windowWidth:  1280,
-		windowHeight: 900,
+		windowWidth:  640,
+		windowHeight: 480,
 		tileSize:     64,
 		CamPosX:      0,
 		CamPosY:      0,
