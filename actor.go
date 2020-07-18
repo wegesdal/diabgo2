@@ -79,7 +79,7 @@ func generateActorSprites(p *ebiten.Image, num_rows int, size int) map[int][]*eb
 func generateGlobeSprites(p *ebiten.Image) []*ebiten.Image {
 	var frames []*ebiten.Image
 	pixelsPerFrame := int(128 / 24)
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 26; i++ {
 		frames = append(frames, p.SubImage(image.Rect(0, pixelsPerFrame*i, 128, 128)).(*ebiten.Image))
 	}
 	return frames

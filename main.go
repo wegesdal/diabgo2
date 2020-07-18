@@ -381,22 +381,25 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, sampleText, exocet_face, g.windowWidth-230, 30, color.White)
 
 	// TODO: LERP THE RESOURCE GLOBE FRAMES
-	g.op.GeoM.Reset()
-	percentHealth := player.hp * 100 / player.maxhp
-	pixelsPerFrame := int(128 / 25)
-	healthGlobeFrame := 25 - (int(percentHealth / 4))
-	g.op.GeoM.Translate(0.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
-	screen.DrawImage(healthGlobe[healthGlobeFrame], g.op)
+	if player.hp > 0 {
+		g.op.GeoM.Reset()
+		percentHealth := player.hp * 100 / player.maxhp
+		pixelsPerFrame := int(128 / 25)
+		healthGlobeFrame := 25 - (int(percentHealth / 4))
+		g.op.GeoM.Translate(0.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
+		screen.DrawImage(healthGlobe[healthGlobeFrame], g.op)
 
-	g.op.GeoM.Reset()
-	percentMana := player.hp * 100 / player.maxhp
-	manaGlobeFrame := 25 - (int(percentMana / 4))
-	g.op.GeoM.Translate(float64(g.windowWidth)-128.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
-	screen.DrawImage(manaGlobe[manaGlobeFrame], g.op)
+		g.op.GeoM.Reset()
+		percentMana := player.hp * 100 / player.maxhp
+		manaGlobeFrame := 25 - (int(percentMana / 4))
+		g.op.GeoM.Translate(float64(g.windowWidth)-128.0, float64(g.windowHeight+healthGlobeFrame*pixelsPerFrame)-128)
+		screen.DrawImage(manaGlobe[manaGlobeFrame], g.op)
 
-	ebitenutil.DebugPrint(
-		screen,
-		fmt.Sprintf("TPS: %0.2f\n", ebiten.CurrentTPS()))
+		ebitenutil.DebugPrint(
+			screen,
+			fmt.Sprintf("TPS: %0.2f\n", ebiten.CurrentTPS()))
+
+	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
