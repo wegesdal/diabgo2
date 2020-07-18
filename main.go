@@ -23,7 +23,7 @@ const tileSize = 64.0
 var (
 	tilesImage       *ebiten.Image
 	doodadsImage     *ebiten.Image
-	levelData        [2][32][32]*node
+	levelData        [2][mapSize][mapSize]*node
 	endOfTheRoad     *node
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
@@ -169,7 +169,7 @@ func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (flo
 	return (1-t)*v0x + t*v1x, (1-t)*v0y + t*v1y
 }
 
-func inMapRange(x int, y int, levelData [2][32][32]*node) bool {
+func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 	if x >= 0 && x < len(levelData[0]) && y >= 0 && y < len(levelData[0]) {
 		return true
 	} else {
@@ -214,7 +214,12 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 		tx, ty := getTileXY(g)
 		if inMapRange(tx, ty, levelData) {
-			player.dest = &node{x: tx, y: ty}
+
+			// prevent movement to invisible and impassible tiles
+			// for performance reasons (pathfinding chokes)
+			if levelData[0][tx][ty].visible && levelData[0][tx][ty].walkable {
+				player.dest = &node{x: tx, y: ty}
+			}
 		}
 	}
 
@@ -409,8 +414,8 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	g := &Game{
 		Name:         "Diabgo",
-		windowWidth:  640,
-		windowHeight: 480,
+		windowWidth:  1280,
+		windowHeight: 900,
 		tileSize:     64,
 		CamPosX:      0,
 		CamPosY:      0,

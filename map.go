@@ -19,6 +19,10 @@ const (
 	block_tile2
 )
 
+const (
+	mapSize = 256
+)
+
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
 	var doodads []*ebiten.Image
 	tileSize := 512
@@ -78,9 +82,9 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	return tiles
 }
 
-func generateMap() ([2][32][32]*node, *node) {
-	endOfTheRoad := &node{x: 0, y: rand.Intn(31)}
-	var levelData = [2][32][32]*node{}
+func generateMap() ([2][mapSize][mapSize]*node, *node) {
+	endOfTheRoad := &node{x: 0, y: rand.Intn(mapSize - 1)}
+	var levelData = [2][mapSize][mapSize]*node{}
 
 	gradient := generateGradient()
 
@@ -89,8 +93,8 @@ func generateMap() ([2][32][32]*node, *node) {
 
 	for len(road) == 0 {
 
-		for x := 0; x < 32; x++ {
-			for y := 0; y < 32; y++ {
+		for x := 0; x < mapSize; x++ {
+			for y := 0; y < mapSize; y++ {
 				levelData[1][x][y] = &node{x: x, y: y, tile: 0}
 				noise := perlin(float64(x), float64(y), gradient)
 				if noise > 1000.0*f {
@@ -114,7 +118,7 @@ func generateMap() ([2][32][32]*node, *node) {
 			}
 		}
 
-		road_start := &node{x: 31, y: rand.Intn(31)}
+		road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
 		levelData[0][road_start.x][road_start.y].tile = road_tile
 		road = Astar(road_start, endOfTheRoad, levelData[0], false)
 		f++
@@ -126,15 +130,15 @@ func generateMap() ([2][32][32]*node, *node) {
 	for _, node := range road {
 		levelData[0][node.x][node.y].tile = road_tile
 		levelData[0][node.x][node.y].walkable = true
-		if node.x+1 < 31 {
+		if node.x+1 < mapSize-1 {
 			levelData[0][node.x+1][node.y].tile = road_tile
 			levelData[0][node.x+1][node.y].walkable = true
 		}
 	}
 
 	// generate a river
-	river_start := &node{x: 0, y: rand.Intn(31)}
-	river := Astar(river_start, &node{x: 31, y: rand.Intn(31)}, levelData[0], false)
+	river_start := &node{x: 0, y: rand.Intn(mapSize - 1)}
+	river := Astar(river_start, &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}, levelData[0], false)
 
 	// bake the river onto the array
 	river = append(river, river_start)
@@ -142,16 +146,16 @@ func generateMap() ([2][32][32]*node, *node) {
 	for _, node := range river {
 		if levelData[0][node.x][node.y].tile == road_tile {
 			levelData[0][node.x][node.y].tile = bridge_tile
-			if node.y+1 < 31 {
+			if node.y+1 < mapSize-1 {
 				levelData[0][node.x][node.y+1].tile = bridge_tile
 			}
-			if node.y+2 < 31 {
+			if node.y+2 < mapSize-1 {
 				levelData[0][node.x][node.y+2].tile = bridge_tile
 			}
 		} else {
 			levelData[0][node.x][node.y].tile = river_tile
 			levelData[0][node.x][node.y].walkable = false
-			if node.y+1 < 31 {
+			if node.y+1 < mapSize-1 {
 				levelData[0][node.x][node.y+1].tile = river_tile
 				levelData[0][node.x][node.y+1].walkable = false
 			}

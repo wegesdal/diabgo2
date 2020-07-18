@@ -22,9 +22,9 @@ func dotGridGradient(ix int, iy int, x float64, y float64, gradient [10][10][2]f
 func perlin(x float64, y float64, gradient [10][10][2]float64) float64 {
 
 	// Determine grid cell coordinates
-	x0 := int(9 * x / 32)
+	x0 := int(9 * x / mapSize)
 	x1 := x0 + 1
-	y0 := int(9 * y / 32)
+	y0 := int(9 * y / mapSize)
 	y1 := y0 + 1
 
 	// Determine interpolation weights

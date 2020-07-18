@@ -89,7 +89,7 @@ func isoTargetDebug(g *Game, screen *ebiten.Image, coord vec64) {
 	ebitenutil.DrawLine(screen, cx-64.0, cy-64.0, cx-64.0, cy+64.0, colornames.Pink)
 }
 
-func findOpenNode(levelData [32][32]*node) *node {
+func findOpenNode(levelData [mapSize][mapSize]*node) *node {
 	x := rand.Intn(31)
 	y := rand.Intn(31)
 	for levelData[x][y].tile != 1 {
