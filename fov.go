@@ -9,17 +9,18 @@ type vec struct {
 	y int
 }
 
-func clearVisibility(tiles [mapSize][mapSize]*node) {
-	for row, _ := range tiles {
-		for col, _ := range tiles[0] {
-			tiles[row][col].visible = false
+func clearVisibility(grid [mapSize][mapSize]*node) {
+	for _, row := range grid {
+		for _, node := range row {
+			node.visible = false
 		}
 	}
 }
 
 // adapted from https://www.albertford.com/shadowcasting/
 
-func compute_fov(origin vec, grid [mapSize][mapSize]*node) {
+func compute_fov(origin vec, grid [][]*node) {
+
 	grid[origin.x][origin.y].visible = true
 	for i := 0; i < 4; i++ {
 		quadrant := Quadrant{cardinal: i, origin: origin}
@@ -28,19 +29,19 @@ func compute_fov(origin vec, grid [mapSize][mapSize]*node) {
 	}
 }
 
-func reveal(tile vec, grid [mapSize][mapSize]*node, quadrant *Quadrant) {
+func reveal(tile vec, grid [][]*node, quadrant *Quadrant) {
 	q := transform(quadrant, tile)
-	if in_bounds(q.x, q.y) {
+	if in_bounds(q.x, q.y, grid) {
 		grid[q.x][q.y].visible = true
 	}
 }
 
-func is_wall(tile vec, grid [mapSize][mapSize]*node, quadrant *Quadrant) bool {
+func is_wall(tile vec, grid [][]*node, quadrant *Quadrant) bool {
 	var w bool
 	if (vec{}) != tile {
 		w = false
 		q := transform(quadrant, tile)
-		if in_bounds(q.x, q.y) {
+		if in_bounds(q.x, q.y, grid) {
 			w = !grid[q.x][q.y].walkable
 		} else {
 			w = true
@@ -49,40 +50,31 @@ func is_wall(tile vec, grid [mapSize][mapSize]*node, quadrant *Quadrant) bool {
 	return w
 }
 
-func in_bounds(x int, y int) bool {
-	if x < mapSize && y < mapSize && x >= 0 && y >= 0 {
+func in_bounds(x int, y int, grid [][]*node) bool {
+	if x < len(grid) && y < len(grid[0]) && x >= 0 && y >= 0 {
 		return true
 	} else {
 		return false
 	}
 }
 
-func in_range(x int, y int, quadrant *Quadrant) bool {
-	q := transform(quadrant, vec{x: x, y: y})
-	d := math.Pow(float64(quadrant.origin.x-q.x), 2) + math.Pow(float64(quadrant.origin.y-q.y), 2)
-	if d < 200 {
-		return true
-	} else {
-		return false
-	}
-}
-
-func is_floor(tile vec, grid [mapSize][mapSize]*node, quadrant *Quadrant) bool {
+func is_floor(tile vec, grid [][]*node, quadrant *Quadrant) bool {
 	var f bool
 	if (vec{}) != tile {
 		f = false
 		q := transform(quadrant, tile)
-		if in_bounds(q.x, q.y) {
+		if in_bounds(q.x, q.y, grid) {
 			f = grid[q.x][q.y].walkable
 		}
 	}
 	return f
 }
 
-func scan(row Row, grid [mapSize][mapSize]*node, quadrant *Quadrant) {
+func scan(row Row, grid [][]*node, quadrant *Quadrant) {
 	var prev_tile = vec{}
 	var tiles = generate_tiles(row)
 	for _, tile := range tiles {
+
 		if is_wall(tile, grid, quadrant) || is_symmetric(row, tile) {
 			reveal(tile, grid, quadrant)
 		}
@@ -95,10 +87,13 @@ func scan(row Row, grid [mapSize][mapSize]*node, quadrant *Quadrant) {
 			scan(next_row, grid, quadrant)
 		}
 		prev_tile = tile
+
 	}
+
 	if is_floor(prev_tile, grid, quadrant) {
 		scan(next(&row), grid, quadrant)
 	}
+
 }
 
 type Quadrant struct {

@@ -179,9 +179,21 @@ func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 
 func (g *Game) Update(screen *ebiten.Image) error {
 
-	clearVisibility(levelData[0])
-	compute_fov(vec{x: player.actor.x, y: player.actor.y}, levelData[0])
+	if g.count%2 == 0 {
+		vision_range := 10.0
+		head_room := int(math.Min(float64(player.actor.x), vision_range))
+		foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
+		width := head_room + foot_room
+		grid_to_check := make([][]*node, width)
+		minY := int(math.Max(0, float64(player.actor.y)-vision_range))
+		maxY := int(math.Min(mapSize-1, float64(player.actor.y)+vision_range))
+		for i := 0; i < width; i++ {
+			grid_to_check[i] = levelData[0][player.actor.x+i-head_room][minY:maxY]
+		}
+		clearVisibility(levelData[0])
 
+		compute_fov(vec{x: head_room, y: int(math.Min(float64(player.actor.y), vision_range))}, grid_to_check)
+	}
 	for _, c := range characters {
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
 		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
@@ -215,7 +227,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		tx, ty := getTileXY(g)
 		if inMapRange(tx, ty, levelData) {
 
-			// prevent movement to invisible and impassible tiles
+			// prevent movement to invisible tiles
 			// for performance reasons (pathfinding chokes)
 			if levelData[0][tx][ty].visible && levelData[0][tx][ty].walkable {
 				player.dest = &node{x: tx, y: ty}
