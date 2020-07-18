@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"math/rand"
 
@@ -20,7 +19,7 @@ const (
 )
 
 const (
-	mapSize = 256
+	mapSize = 512
 )
 
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
@@ -91,40 +90,38 @@ func generateMap() ([2][mapSize][mapSize]*node, *node) {
 	var road []*node
 	f := 1.0
 
-	for len(road) == 0 {
+	// for len(road) == 0 {
 
-		for x := 0; x < mapSize; x++ {
-			for y := 0; y < mapSize; y++ {
-				levelData[1][x][y] = &node{x: x, y: y, tile: 0}
-				noise := perlin(float64(x), float64(y), gradient)
-				if noise > 1000.0*f {
-					levelData[0][x][y] = &node{x: x, y: y, tile: river_tile}
-				} else if noise > 0.0*f {
-					levelData[0][x][y] = &node{x: x, y: y, tile: dirt_tile}
-				} else if noise > -40.0*f {
-					levelData[0][x][y] = &node{x: x, y: y, tile: grass_tile}
-				} else if noise > -60.0*f {
-					levelData[0][x][y] = &node{x: x, y: y, tile: cobble_tile}
-				} else if noise > -500.0*f {
-					levelData[0][x][y] = &node{x: x, y: y, tile: block_tile1}
-				} else {
-					levelData[0][x][y] = &node{x: x, y: y, tile: block_tile2}
-				}
-				if levelData[0][x][y].tile < river_tile {
-					levelData[0][x][y].walkable = true
-				} else {
-					levelData[0][x][y].walkable = false
-				}
+	for x := 0; x < mapSize; x++ {
+		for y := 0; y < mapSize; y++ {
+			levelData[1][x][y] = &node{x: x, y: y, tile: 0}
+			noise := perlin(float64(x), float64(y), gradient)
+			if noise > 30000.0*f {
+				levelData[0][x][y] = &node{x: x, y: y, tile: river_tile}
+			} else if noise > 10000.0*f {
+				levelData[0][x][y] = &node{x: x, y: y, tile: dirt_tile}
+			} else if noise > -2000.0*f {
+				levelData[0][x][y] = &node{x: x, y: y, tile: grass_tile}
+			} else if noise > -10000.0*f {
+				levelData[0][x][y] = &node{x: x, y: y, tile: cobble_tile}
+			} else if noise > -20000.0*f {
+				levelData[0][x][y] = &node{x: x, y: y, tile: block_tile1}
+			} else {
+				levelData[0][x][y] = &node{x: x, y: y, tile: block_tile2}
+			}
+			if levelData[0][x][y].tile < river_tile {
+				levelData[0][x][y].walkable = true
+			} else {
+				levelData[0][x][y].walkable = false
 			}
 		}
-
-		road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
-		levelData[0][road_start.x][road_start.y].tile = road_tile
-		road = Astar(road_start, endOfTheRoad, levelData[0], false)
-		f++
 	}
 
-	fmt.Print(f)
+	road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
+	levelData[0][road_start.x][road_start.y].tile = road_tile
+	road = Astar(road_start, endOfTheRoad, levelData[0], false)
+	// 	f++
+	// }
 
 	// bake the road onto the array
 	for _, node := range road {
