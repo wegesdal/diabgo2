@@ -42,7 +42,7 @@ func diagonal_distance(a node, b node) int {
 	return Max((a.x-b.x)*(a.x-b.x), (a.y-b.y)*(a.y-b.y))
 }
 
-func walkable(n node, grid [mapSize][mapSize]*node) bool {
+func walkable(n node, grid [][]*node) bool {
 	if n.x >= 0 && n.y >= 0 && n.x < len(grid[0]) && n.y < len(grid) {
 		return grid[n.x][n.y].walkable
 	} else {
@@ -88,7 +88,7 @@ func remove(s []*node, i int) []*node {
 	return s[:len(s)-1]
 }
 
-func Astar(start *node, end *node, grid [mapSize][mapSize]*node, diagonals bool) []*node {
+func Astar(start *node, end *node, grid [][]*node, diagonals bool) []*node {
 	var open = []*node{}
 	var closed = []*node{}
 	open = append(open, start)

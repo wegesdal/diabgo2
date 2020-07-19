@@ -180,23 +180,29 @@ func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 	}
 }
 
+func localGrid() ([][]*node, vec) {
+	vision_range := 16.0
+	head_room := int(math.Min(float64(player.actor.x), vision_range))
+	foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
+	width := head_room + foot_room
+	grid_to_check := make([][]*node, width)
+	minY := int(math.Max(0, float64(player.actor.y)-vision_range))
+	maxY := int(math.Min(mapSize-1, float64(player.actor.y)+vision_range))
+	for i := 0; i < width; i++ {
+		grid_to_check[i] = levelData[0][player.actor.x+i-head_room][minY:maxY]
+	}
+	origin := vec{x: head_room, y: int(math.Min(float64(player.actor.y), vision_range))}
+
+	return grid_to_check, origin
+}
+
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	if g.count%5 == 0 {
-		vision_range := 16.0
-		head_room := int(math.Min(float64(player.actor.x), vision_range))
-		foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
-		width := head_room + foot_room
-		grid_to_check := make([][]*node, width)
-		minY := int(math.Max(0, float64(player.actor.y)-vision_range))
-		maxY := int(math.Min(mapSize-1, float64(player.actor.y)+vision_range))
-		for i := 0; i < width; i++ {
-			grid_to_check[i] = levelData[0][player.actor.x+i-head_room][minY:maxY]
-		}
+
+		grid_to_check, origin := localGrid()
 
 		clearVisibility(levelData[0])
-
-		origin := vec{x: head_room, y: int(math.Min(float64(player.actor.y), vision_range))}
 		compute_fov(origin, grid_to_check)
 	}
 	for _, c := range characters {

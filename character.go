@@ -111,17 +111,31 @@ func characterStateMachine(characters []*character, levelData [mapSize][mapSize]
 					// otherwise move towards target unless player (let the player control their movement)
 
 					// I SHOULDN'T RECALCULATE EVERY LOOP
-					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, levelData, true)
+
+					grid_to_check, origin := localGrid()
+
+					path := Astar(&node{x: origin.x, y: origin.y}, &node{x: c.target.actor.x - c.actor.x, y: c.target.actor.y - c.actor.y}, grid_to_check, true)
+					for _, node := range path {
+						node.x += c.actor.x
+						node.y += c.actor.y
+					}
 					if len(path) > 0 {
-						if path[len(path)-1].x != c.target.actor.x || path[len(path)-1].y != c.target.actor.y {
+						if path[len(path)-1].x+c.actor.x != c.target.actor.x || path[len(path)-1].y+c.actor.y != c.target.actor.y {
 							step_forward(c.actor, path)
 						}
 					}
 				}
 				// if no target
 			} else {
-				path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData, true)
+				// path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData, true)
+				grid_to_check, origin := localGrid()
+				path := Astar(&node{x: origin.x, y: origin.y}, &node{x: c.dest.x - c.actor.x + origin.x, y: c.dest.y - c.actor.y + origin.y}, grid_to_check, true)
+				for _, node := range path {
+					node.x += c.actor.x - origin.x
+					node.y += c.actor.y - origin.y
+				}
 				step_forward(c.actor, path)
+				// step_forward(c.actor, path)
 			}
 
 		} else if c.actor.state == attack {
