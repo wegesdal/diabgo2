@@ -21,7 +21,7 @@ const (
 )
 
 const (
-	mapSize = 512
+	mapSize = 1024
 )
 
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
