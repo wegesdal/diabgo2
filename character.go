@@ -192,10 +192,10 @@ func removeDeadCharacters(actors []*actor, characters []*character) ([]*actor, [
 	for i, c := range characters {
 		// KILL CREEPS WHO REACH END OF THE ROAD
 		// TODO: ADJUST SCORE
-		if c.actor.name == "creep" && c.actor.x == c.dest.x && c.actor.y == c.dest.y && c.actor.state != dead {
-			c.actor.frame = 0
-			c.actor.state = dead
-		}
+		// if c.actor.name == "creep" && c.actor.x == c.dest.x && c.actor.y == c.dest.y && c.actor.state != dead {
+		// 	c.actor.frame = 0
+		// 	c.actor.state = dead
+		// }
 		if c.actor.state == dead && c.actor.frame == 9 {
 
 			actors = removeDeadActors(c, actors)

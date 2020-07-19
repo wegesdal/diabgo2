@@ -7,7 +7,7 @@ func lerp_f(a0 float64, a1 float64, w float64) float64 {
 }
 
 // Computes the dot product of the distance and gradient vectors.
-func dotGridGradient(ix int, iy int, x float64, y float64, gradient [10][10][2]float64) float64 {
+func dotGridGradient(ix int, iy int, x float64, y float64, gradient [8][8][2]float64) float64 {
 
 	// Precomputed (or otherwise) gradient vectors at each grid node
 	// Compute the distance vector
@@ -19,12 +19,12 @@ func dotGridGradient(ix int, iy int, x float64, y float64, gradient [10][10][2]f
 }
 
 // Compute Perlin noise at coordinates x, y
-func perlin(x float64, y float64, gradient [10][10][2]float64) float64 {
+func perlin(x float64, y float64, gradient [8][8][2]float64) float64 {
 
 	// Determine grid cell coordinates
-	x0 := int(9 * x / mapSize)
+	x0 := int(7 * x / mapSize)
 	x1 := x0 + 1
-	y0 := int(9 * y / mapSize)
+	y0 := int(7 * y / mapSize)
 	y1 := y0 + 1
 
 	// Determine interpolation weights
@@ -53,8 +53,8 @@ func perlin(x float64, y float64, gradient [10][10][2]float64) float64 {
 	return value
 }
 
-func generateGradient() [10][10][2]float64 {
-	var gradient [10][10][2]float64
+func generateGradient() [8][8][2]float64 {
+	var gradient [8][8][2]float64
 	for x := 0; x < len(gradient); x++ {
 		for y := 0; y < len(gradient[0]); y++ {
 			for z := 0; z < len(gradient[0][0]); z++ {

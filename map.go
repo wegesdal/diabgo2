@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"math/rand"
 
 	"github.com/hajimehoshi/ebiten"
 )
@@ -19,7 +18,7 @@ const (
 )
 
 const (
-	mapSize = 512
+	mapSize = 128
 )
 
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
@@ -81,34 +80,35 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	return tiles
 }
 
-func generateMap() ([2][mapSize][mapSize]*node, *node) {
-	endOfTheRoad := &node{x: 0, y: rand.Intn(mapSize - 1)}
+func generateMap() [2][mapSize][mapSize]*node {
+	// endOfTheRoad := &node{x: 0, y: rand.Intn(mapSize - 1)}
 	var levelData = [2][mapSize][mapSize]*node{}
 
-	gradient := generateGradient()
+	// gradient := generateGradient()
 
-	var road []*node
-	f := 1.0
+	// var road []*node
+	// f := 1.0
 
 	// for len(road) == 0 {
 
 	for x := 0; x < mapSize; x++ {
 		for y := 0; y < mapSize; y++ {
 			levelData[1][x][y] = &node{x: x, y: y, tile: 0}
-			noise := perlin(float64(x), float64(y), gradient)
-			if noise > 30000.0*f {
-				levelData[0][x][y] = &node{x: x, y: y, tile: river_tile}
-			} else if noise > 10000.0*f {
-				levelData[0][x][y] = &node{x: x, y: y, tile: dirt_tile}
-			} else if noise > -2000.0*f {
-				levelData[0][x][y] = &node{x: x, y: y, tile: grass_tile}
-			} else if noise > -10000.0*f {
-				levelData[0][x][y] = &node{x: x, y: y, tile: cobble_tile}
-			} else if noise > -20000.0*f {
-				levelData[0][x][y] = &node{x: x, y: y, tile: block_tile1}
-			} else {
-				levelData[0][x][y] = &node{x: x, y: y, tile: block_tile2}
-			}
+			// noise := perlin(float64(x), float64(y), gradient)
+			// if noise > 30000.0*f {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: river_tile}
+			// } else if noise > 10000.0*f {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: dirt_tile}
+			// } else if noise > -2000.0*f {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: grass_tile}
+			// } else if noise > -10000.0*f {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: cobble_tile}
+			// } else if noise > -20000.0*f {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: block_tile1}
+			// } else {
+			// 	levelData[0][x][y] = &node{x: x, y: y, tile: block_tile2}
+			// }
+			levelData[0][x][y] = &node{x: x, y: y, tile: dirt_tile}
 			if levelData[0][x][y].tile < river_tile {
 				levelData[0][x][y].walkable = true
 			} else {
@@ -117,47 +117,47 @@ func generateMap() ([2][mapSize][mapSize]*node, *node) {
 		}
 	}
 
-	road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
-	levelData[0][road_start.x][road_start.y].tile = road_tile
-	road = Astar(road_start, endOfTheRoad, levelData[0], false)
-	// 	f++
+	// road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
+	// levelData[0][road_start.x][road_start.y].tile = road_tile
+	// road = Astar(road_start, endOfTheRoad, levelData[0], false)
+	// // 	f++
+	// // }
+
+	// // bake the road onto the array
+	// for _, node := range road {
+	// 	levelData[0][node.x][node.y].tile = road_tile
+	// 	levelData[0][node.x][node.y].walkable = true
+	// 	if node.x+1 < mapSize-1 {
+	// 		levelData[0][node.x+1][node.y].tile = road_tile
+	// 		levelData[0][node.x+1][node.y].walkable = true
+	// 	}
 	// }
 
-	// bake the road onto the array
-	for _, node := range road {
-		levelData[0][node.x][node.y].tile = road_tile
-		levelData[0][node.x][node.y].walkable = true
-		if node.x+1 < mapSize-1 {
-			levelData[0][node.x+1][node.y].tile = road_tile
-			levelData[0][node.x+1][node.y].walkable = true
-		}
-	}
-
 	// generate a river
-	river_start := &node{x: 0, y: rand.Intn(mapSize - 1)}
-	river := Astar(river_start, &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}, levelData[0], false)
+	// river_start := &node{x: 0, y: rand.Intn(mapSize - 1)}
+	// river := Astar(river_start, &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}, levelData[0], false)
 
-	// bake the river onto the array
-	river = append(river, river_start)
+	// // bake the river onto the array
+	// river = append(river, river_start)
 
-	for _, node := range river {
-		if levelData[0][node.x][node.y].tile == road_tile {
-			levelData[0][node.x][node.y].tile = bridge_tile
-			if node.y+1 < mapSize-1 {
-				levelData[0][node.x][node.y+1].tile = bridge_tile
-			}
-			if node.y+2 < mapSize-1 {
-				levelData[0][node.x][node.y+2].tile = bridge_tile
-			}
-		} else {
-			levelData[0][node.x][node.y].tile = river_tile
-			levelData[0][node.x][node.y].walkable = false
-			if node.y+1 < mapSize-1 {
-				levelData[0][node.x][node.y+1].tile = river_tile
-				levelData[0][node.x][node.y+1].walkable = false
-			}
-		}
-	}
+	// for _, node := range river {
+	// 	if levelData[0][node.x][node.y].tile == road_tile {
+	// 		levelData[0][node.x][node.y].tile = bridge_tile
+	// 		if node.y+1 < mapSize-1 {
+	// 			levelData[0][node.x][node.y+1].tile = bridge_tile
+	// 		}
+	// 		if node.y+2 < mapSize-1 {
+	// 			levelData[0][node.x][node.y+2].tile = bridge_tile
+	// 		}
+	// 	} else {
+	// 		levelData[0][node.x][node.y].tile = river_tile
+	// 		levelData[0][node.x][node.y].walkable = false
+	// 		if node.y+1 < mapSize-1 {
+	// 			levelData[0][node.x][node.y+1].tile = river_tile
+	// 			levelData[0][node.x][node.y+1].walkable = false
+	// 		}
+	// 	}
+	// }
 
-	return levelData, endOfTheRoad
+	return levelData
 }

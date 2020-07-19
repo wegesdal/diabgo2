@@ -21,10 +21,10 @@ import (
 const tileSize = 64.0
 
 var (
-	tilesImage       *ebiten.Image
-	doodadsImage     *ebiten.Image
-	levelData        [2][mapSize][mapSize]*node
-	endOfTheRoad     *node
+	tilesImage   *ebiten.Image
+	doodadsImage *ebiten.Image
+	levelData    [2][mapSize][mapSize]*node
+	// endOfTheRoad     *node
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
 	healthGlobeImage *ebiten.Image
@@ -135,7 +135,7 @@ func init() {
 	//INITIALIZE WORLD OBJECTS
 
 	// MAP
-	levelData, endOfTheRoad = generateMap()
+	levelData = generateMap()
 	tiles = generateTiles(tilesImage)
 	doodads = generateDoodads(doodadsImage)
 
@@ -180,7 +180,7 @@ func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	if g.count%2 == 0 {
-		vision_range := 10.0
+		vision_range := 6.0
 		head_room := int(math.Min(float64(player.actor.x), vision_range))
 		foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
 		width := head_room + foot_room
@@ -253,7 +253,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 			creepAnim := generateCharacterSprites(creepSheet, 256)
 			creepActor := spawn_actor(tx, ty, "creep", creepAnim)
 			c := spawn_character(creepActor)
-			c.dest = endOfTheRoad
+			// c.dest = endOfTheRoad
 			c.actor.faction = hostile
 			c.prange = 8000.0
 			c.arange = 5000.0
@@ -269,7 +269,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		if inMapRange(tx, ty, levelData) {
 			bossActor := spawn_actor(tx, ty, "boss", bossAnim)
 			c := spawn_character(bossActor)
-			c.dest = endOfTheRoad
+			// c.dest = endOfTheRoad
 			c.actor.faction = hostile
 			c.prange = 8000.0
 			c.arange = 5000.0
