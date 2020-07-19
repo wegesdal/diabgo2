@@ -43,7 +43,7 @@ func diagonal_distance(a node, b node) int {
 }
 
 func walkable(n node, grid [][]*node) bool {
-	if n.x >= 0 && n.y >= 0 && n.x < len(grid[0]) && n.y < len(grid) {
+	if n.x >= 0 && n.y >= 0 && n.x < len(grid) && n.y < len(grid[0]) {
 		return grid[n.x][n.y].walkable
 	} else {
 		return false

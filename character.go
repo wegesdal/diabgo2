@@ -114,10 +114,10 @@ func characterStateMachine(characters []*character, levelData [mapSize][mapSize]
 
 					grid_to_check, origin := localGrid()
 
-					path := Astar(&node{x: origin.x, y: origin.y}, &node{x: c.target.actor.x - c.actor.x, y: c.target.actor.y - c.actor.y}, grid_to_check, true)
+					path := Astar(&node{x: origin.x, y: origin.y}, &node{x: c.target.actor.x - c.actor.x + origin.x, y: c.target.actor.y - c.actor.y + origin.y}, grid_to_check, true)
 					for _, node := range path {
-						node.x += c.actor.x
-						node.y += c.actor.y
+						node.x += c.actor.x - origin.x
+						node.y += c.actor.y - origin.y
 					}
 					if len(path) > 0 {
 						if path[len(path)-1].x+c.actor.x != c.target.actor.x || path[len(path)-1].y+c.actor.y != c.target.actor.y {
@@ -128,6 +128,7 @@ func characterStateMachine(characters []*character, levelData [mapSize][mapSize]
 				// if no target
 			} else {
 				// path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData, true)
+				// TODO: BOUNDS CHECK DESTINATION
 				grid_to_check, origin := localGrid()
 				path := Astar(&node{x: origin.x, y: origin.y}, &node{x: c.dest.x - c.actor.x + origin.x, y: c.dest.y - c.actor.y + origin.y}, grid_to_check, true)
 				for _, node := range path {
