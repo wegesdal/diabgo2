@@ -24,6 +24,7 @@ var (
 	tilesImage   *ebiten.Image
 	doodadsImage *ebiten.Image
 	levelData    [2][mapSize][mapSize]*node
+	gradient     [128][128][2]float64
 	// endOfTheRoad     *node
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
@@ -139,6 +140,8 @@ func init() {
 	tiles = generateTiles(tilesImage)
 	doodads = generateDoodads(doodadsImage)
 
+	gradient = generateGradient()
+
 	// ACTORS
 	playerAnim := generateCharacterSprites(playerSheet, 256)
 	playerSpawn := findOpenNode(levelData[0])
@@ -180,7 +183,7 @@ func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	if g.count%2 == 0 {
-		vision_range := 6.0
+		vision_range := 16.0
 		head_room := int(math.Min(float64(player.actor.x), vision_range))
 		foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
 		width := head_room + foot_room
@@ -190,9 +193,11 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		for i := 0; i < width; i++ {
 			grid_to_check[i] = levelData[0][player.actor.x+i-head_room][minY:maxY]
 		}
+
 		clearVisibility(levelData[0])
 
-		compute_fov(vec{x: head_room, y: int(math.Min(float64(player.actor.y), vision_range))}, grid_to_check)
+		origin := vec{x: head_room, y: int(math.Min(float64(player.actor.y), vision_range))}
+		compute_fov(origin, grid_to_check)
 	}
 	for _, c := range characters {
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
@@ -299,21 +304,26 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for x := 0; x < len(levelData[0]); x++ {
 		for y := 0; y < len(levelData[0]); y++ {
 			if levelData[0][x][y].visible {
-				xi, yi := cartesianToIso(float64(x), float64(y))
-				// if player.actor.coord.y > yi {
-				g.op.GeoM.Reset()
-				g.op.GeoM.Translate(float64(xi), float64(yi))
-				g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-				g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
-				t := tiles[levelData[0][x][y].tile]
-				screen.DrawImage(t, g.op)
+				if levelData[0][x][y].tile == sentinal {
+					compute_noise(x, y)
+				} else {
+					xi, yi := cartesianToIso(float64(x), float64(y))
+					// if player.actor.coord.y > yi {
+					g.op.GeoM.Reset()
+					g.op.GeoM.Translate(float64(xi), float64(yi))
+					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
-				d := doodads[levelData[1][x][y].tile]
-				if levelData[1][x][y].tile > 0 {
-					g.op.GeoM.Translate(-256.0, -400.0)
-					screen.DrawImage(d, g.op)
-					drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
+					t := tiles[levelData[0][x][y].tile-1]
+					screen.DrawImage(t, g.op)
+
+					d := doodads[levelData[1][x][y].tile]
+					if levelData[1][x][y].tile > 0 {
+						g.op.GeoM.Translate(-256.0, -400.0)
+						screen.DrawImage(d, g.op)
+						drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
+					}
 				}
 			}
 		}

@@ -92,7 +92,7 @@ func isoTargetDebug(g *Game, screen *ebiten.Image, coord vec64) {
 func findOpenNode(levelData [mapSize][mapSize]*node) *node {
 	x := rand.Intn(31)
 	y := rand.Intn(31)
-	for levelData[x][y].tile != 1 {
+	for !levelData[x][y].walkable {
 		x = rand.Intn(31)
 		y = rand.Intn(31)
 	}
