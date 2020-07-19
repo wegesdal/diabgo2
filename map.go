@@ -12,10 +12,12 @@ const (
 	dirt_tile
 	road_tile
 	cobble_tile
-	bridge_tile
+	sand_tile
 	river_tile
 	block_tile1
 	block_tile2
+	parlor_white
+	parlor_black
 )
 
 const (
@@ -58,9 +60,9 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	sy = 256
 	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
 
-	// bridge
-	sx = 128
-	sy = 512
+	// sand
+	sx = 1664
+	sy = 1472
 	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
 
 	// river
@@ -78,6 +80,17 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	sy = 320
 	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
 
+	// parlor white
+
+	sx = 128
+	sy = 896
+	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
+
+	// parlor black
+
+	sx = 1664
+	sy = 1728
+	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
 	return tiles
 }
 
@@ -147,24 +160,35 @@ func compute_noise(x int, y int) {
 	if x > 0 && y > 0 && x < mapSize && y < mapSize {
 
 		noise := perlin(float64(x), float64(y), gradient)
-		if noise > 40000.0 {
-			levelData[0][x][y].tile = river_tile
+		if noise > 30000.0 {
+			levelData[0][x][y].tile = block_tile2
 			levelData[0][x][y].walkable = false
+		} else if noise > 25000.0 {
+			levelData[0][x][y].tile = block_tile1
+			levelData[0][x][y].walkable = false
+		} else if noise > 20000.0 {
+			if (x%2+y%2)%2 == 0 {
+				levelData[0][x][y].tile = parlor_white
+			} else {
+				levelData[0][x][y].tile = parlor_black
+			}
+			levelData[0][x][y].walkable = true
 		} else if noise > 10000.0 {
-			levelData[0][x][y].tile = dirt_tile
+			levelData[0][x][y].tile = cobble_tile
 			levelData[0][x][y].walkable = true
 		} else if noise > 0.0 {
 			levelData[0][x][y].tile = grass_tile
 			levelData[0][x][y].walkable = true
-		} else if noise > -20000.0 {
-			levelData[0][x][y].tile = cobble_tile
+		} else if noise > -30000.0 {
+			levelData[0][x][y].tile = dirt_tile
 			levelData[0][x][y].walkable = true
 		} else if noise > -40000.0 {
-			levelData[0][x][y].tile = block_tile1
-			levelData[0][x][y].walkable = false
+			levelData[0][x][y].tile = sand_tile
+			levelData[0][x][y].walkable = true
 		} else {
-			levelData[0][x][y].tile = block_tile2
+			levelData[0][x][y].tile = river_tile
 			levelData[0][x][y].walkable = false
 		}
 	}
+	levelData[0][x][y].visible = false
 }

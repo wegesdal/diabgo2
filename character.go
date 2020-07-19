@@ -109,6 +109,8 @@ func characterStateMachine(characters []*character, levelData [mapSize][mapSize]
 					c.actor.direction = wayfind(c.actor.x, c.actor.y, c.target.actor.x, c.target.actor.y)
 				} else {
 					// otherwise move towards target unless player (let the player control their movement)
+
+					// I SHOULDN'T RECALCULATE EVERY LOOP
 					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, levelData, true)
 					if len(path) > 0 {
 						if path[len(path)-1].x != c.target.actor.x || path[len(path)-1].y != c.target.actor.y {

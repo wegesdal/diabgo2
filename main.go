@@ -182,7 +182,7 @@ func inMapRange(x int, y int, levelData [2][mapSize][mapSize]*node) bool {
 
 func (g *Game) Update(screen *ebiten.Image) error {
 
-	if g.count%2 == 0 {
+	if g.count%5 == 0 {
 		vision_range := 16.0
 		head_room := int(math.Min(float64(player.actor.x), vision_range))
 		foot_room := int(math.Min(mapSize-float64(player.actor.x)-1, vision_range))
