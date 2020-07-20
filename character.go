@@ -90,7 +90,7 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 
 			// if actor has not reached destination, walk
 
-			if c.dest.x != int(ix+0.5) && c.dest.y != int(iy+0.5) || c.target != c {
+			if !(math.Abs(float64(c.dest.x)-ix) < 0.5 && math.Abs(float64(c.dest.y)-iy) < 0.5) {
 				c.actor.state = walk
 			}
 
@@ -98,7 +98,7 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 
 			// if actor has reached destination, idle
 
-			if c.dest.x == int(ix+0.5) && c.dest.y == int(iy+0.5) {
+			if math.Abs(float64(c.dest.x)-ix) < 0.5 && math.Abs(float64(c.dest.y)-iy) < 0.5 {
 				c.actor.state = idle
 			}
 
@@ -110,33 +110,19 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 				} else {
 					// otherwise move towards target unless player (let the player control their movement)
 
-					// I SHOULDN'T RECALCULATE EVERY LOOP
-
-					// grid_to_check, origin := localGrid()
-
 					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, flatMap, true)
-					// for _, node := range path {
-					// 	node.x += c.actor.x
-					// 	node.y += c.actor.y
-					// }
+
 					if len(path) > 0 {
 						if path[len(path)-1].x+c.actor.x != c.target.actor.x || path[len(path)-1].y+c.actor.y != c.target.actor.y {
 							step_forward(c.actor, path)
 						}
 					}
 				}
-				// if no target
 			} else {
-				// path := Astar(&node{x: c.actor.x, y: c.actor.y}, c.dest, levelData, true)
-				// TODO: BOUNDS CHECK DESTINATION
-				// grid_to_check, origin := localGrid()
+
 				path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.dest.x, y: c.dest.y}, flatMap, true)
-				// for _, node := range path {
-				// 	// node.x += (gx - 1) * chunkSize
-				// 	// node.y += (gx - 1) * chunkSize
-				// }
+
 				step_forward(c.actor, path)
-				// step_forward(c.actor, path)
 			}
 
 		} else if c.actor.state == attack {

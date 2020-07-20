@@ -112,5 +112,5 @@ func getTileXY(g *Game) (int, int) {
 	y -= .5 * float64(g.tileSize)
 	//Convert isometric
 	imx, imy := isoToCartesian(x, y)
-	return int(imx) + ((1 - gx) * chunkSize), int(imy) + ((1 - gy) * chunkSize)
+	return int(imx) + ((1 - gx) * chunkSize), int(imy+0.5) + ((1 - gy) * chunkSize)
 }

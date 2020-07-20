@@ -256,14 +256,8 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 		tx, ty := getTileXY(g)
 
-		// if inMapRange(tx, ty, levelData[1][1]) {
-
-		// prevent movement to invisible tiles
-		// for performance reasons (pathfinding chokes)
-		// if levelData[1][1][0][tx][ty].visible && levelData[1][1][0][tx][ty].walkable {
 		player.dest = &node{x: tx - (1-gx)*chunkSize, y: ty - (1-gy)*chunkSize}
-		// }
-		// }
+
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {

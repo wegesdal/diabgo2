@@ -129,10 +129,10 @@ func compute_noise(x int, y int) (int, bool) {
 	var w bool
 	noise := perlin(float64(x), float64(y), gradient)
 
-	if noise > 30000.0 {
+	if noise > 40000.0 {
 		t = block_tile2
 		w = false
-	} else if noise > 25000.0 {
+	} else if noise > 35000.0 {
 		t = block_tile1
 		w = false
 	} else if noise > 20000.0 {
@@ -151,7 +151,7 @@ func compute_noise(x int, y int) (int, bool) {
 	} else if noise > -30000.0 {
 		t = dirt_tile
 		w = true
-	} else if noise > -40000.0 {
+	} else if noise > -50000.0 {
 		t = sand_tile
 		w = true
 	} else {

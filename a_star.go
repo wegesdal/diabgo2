@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -47,7 +46,6 @@ func walkable(n node, grid [chunkSize * 3][chunkSize * 3]*node) bool {
 	if n.x+(1-gx)*chunkSize >= 0 && n.y+(1-gy)*chunkSize >= 0 && n.x+(1-gx)*chunkSize < len(grid) && n.y+(1-gy)*chunkSize < len(grid[0]) {
 		return grid[n.x+(1-gx)*chunkSize][n.y+(1-gy)*chunkSize].walkable
 	} else {
-		fmt.Print("Not happen")
 		return false
 	}
 }
