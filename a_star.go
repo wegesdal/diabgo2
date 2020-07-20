@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -42,10 +43,11 @@ func diagonal_distance(a node, b node) int {
 	return Max((a.x-b.x)*(a.x-b.x), (a.y-b.y)*(a.y-b.y))
 }
 
-func walkable(n node, grid [][]*node) bool {
-	if n.x >= 0 && n.y >= 0 && n.x < len(grid) && n.y < len(grid[0]) {
-		return grid[n.x][n.y].walkable
+func walkable(n node, grid [chunkSize * 3][chunkSize * 3]*node) bool {
+	if n.x+(1-gx)*chunkSize >= 0 && n.y+(1-gy)*chunkSize >= 0 && n.x+(1-gx)*chunkSize < len(grid) && n.y+(1-gy)*chunkSize < len(grid[0]) {
+		return grid[n.x+(1-gx)*chunkSize][n.y+(1-gy)*chunkSize].walkable
 	} else {
+		fmt.Print("Not happen")
 		return false
 	}
 }
@@ -88,7 +90,7 @@ func remove(s []*node, i int) []*node {
 	return s[:len(s)-1]
 }
 
-func Astar(start *node, end *node, grid [][]*node, diagonals bool) []*node {
+func Astar(start *node, end *node, grid [chunkSize * 3][chunkSize * 3]*node, diagonals bool) []*node {
 	var open = []*node{}
 	var closed = []*node{}
 	open = append(open, start)

@@ -21,7 +21,7 @@ const (
 )
 
 const (
-	mapSize = 1024
+	chunkSize = 16
 )
 
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
@@ -94,101 +94,70 @@ func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	return tiles
 }
 
-func generateMap() [2][mapSize][mapSize]*node {
-	// endOfTheRoad := &node{x: 0, y: rand.Intn(mapSize - 1)}
-	var levelData = [2][mapSize][mapSize]*node{}
-
-	// var road []*node
-	// f := 1.0
-
-	// for len(road) == 0 {
-
-	for x := 0; x < mapSize; x++ {
-		for y := 0; y < mapSize; y++ {
-			levelData[1][x][y] = &node{x: x, y: y, tile: sentinal}
-			levelData[0][x][y] = &node{x: x, y: y, tile: sentinal}
-			levelData[0][x][y].walkable = true
+func generateMap() [3][3][2][chunkSize][chunkSize]*node {
+	var levelData = [3][3][2][chunkSize][chunkSize]*node{}
+	for cx := 0; cx < 3; cx++ {
+		for cy := 0; cy < 3; cy++ {
+			for x := 0; x < chunkSize; x++ {
+				for y := 0; y < chunkSize; y++ {
+					levelData[cx][cy][1][x][y] = &node{x: x + cx*chunkSize, y: y + cy*chunkSize, tile: sentinal}
+					levelData[cx][cy][0][x][y] = &node{x: x + cx*chunkSize, y: y + cy*chunkSize, tile: sentinal}
+					levelData[cx][cy][0][x][y].walkable = true
+				}
+			}
 		}
 	}
-
-	// road_start := &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}
-	// levelData[0][road_start.x][road_start.y].tile = road_tile
-	// road = Astar(road_start, endOfTheRoad, levelData[0], false)
-	// // 	f++
-	// // }
-
-	// // bake the road onto the array
-	// for _, node := range road {
-	// 	levelData[0][node.x][node.y].tile = road_tile
-	// 	levelData[0][node.x][node.y].walkable = true
-	// 	if node.x+1 < mapSize-1 {
-	// 		levelData[0][node.x+1][node.y].tile = road_tile
-	// 		levelData[0][node.x+1][node.y].walkable = true
-	// 	}
-	// }
-
-	// generate a river
-	// river_start := &node{x: 0, y: rand.Intn(mapSize - 1)}
-	// river := Astar(river_start, &node{x: mapSize - 1, y: rand.Intn(mapSize - 1)}, levelData[0], false)
-
-	// // bake the river onto the array
-	// river = append(river, river_start)
-
-	// for _, node := range river {
-	// 	if levelData[0][node.x][node.y].tile == road_tile {
-	// 		levelData[0][node.x][node.y].tile = bridge_tile
-	// 		if node.y+1 < mapSize-1 {
-	// 			levelData[0][node.x][node.y+1].tile = bridge_tile
-	// 		}
-	// 		if node.y+2 < mapSize-1 {
-	// 			levelData[0][node.x][node.y+2].tile = bridge_tile
-	// 		}
-	// 	} else {
-	// 		levelData[0][node.x][node.y].tile = river_tile
-	// 		levelData[0][node.x][node.y].walkable = false
-	// 		if node.y+1 < mapSize-1 {
-	// 			levelData[0][node.x][node.y+1].tile = river_tile
-	// 			levelData[0][node.x][node.y+1].walkable = false
-	// 		}
-	// 	}
-	// }
-
 	return levelData
 }
 
-func compute_noise(x int, y int) {
-	if x > 0 && y > 0 && x < mapSize && y < mapSize {
-
-		noise := perlin(float64(x), float64(y), gradient)
-		if noise > 30000.0 {
-			levelData[0][x][y].tile = block_tile2
-			levelData[0][x][y].walkable = false
-		} else if noise > 25000.0 {
-			levelData[0][x][y].tile = block_tile1
-			levelData[0][x][y].walkable = false
-		} else if noise > 20000.0 {
-			if (x%2+y%2)%2 == 0 {
-				levelData[0][x][y].tile = parlor_white
-			} else {
-				levelData[0][x][y].tile = parlor_black
+func flattenMap() [chunkSize * 3][chunkSize * 3]*node {
+	var flatMap = [chunkSize * 3][chunkSize * 3]*node{}
+	for cx := 0; cx < 3; cx++ {
+		for cy := 0; cy < 3; cy++ {
+			for x := 0; x < chunkSize; x++ {
+				for y := 0; y < chunkSize; y++ {
+					flatMap[x+cx*chunkSize][y+cy*chunkSize] = levelData[cx][cy][0][x][y]
+				}
 			}
-			levelData[0][x][y].walkable = true
-		} else if noise > 10000.0 {
-			levelData[0][x][y].tile = cobble_tile
-			levelData[0][x][y].walkable = true
-		} else if noise > 0.0 {
-			levelData[0][x][y].tile = grass_tile
-			levelData[0][x][y].walkable = true
-		} else if noise > -30000.0 {
-			levelData[0][x][y].tile = dirt_tile
-			levelData[0][x][y].walkable = true
-		} else if noise > -40000.0 {
-			levelData[0][x][y].tile = sand_tile
-			levelData[0][x][y].walkable = true
-		} else {
-			levelData[0][x][y].tile = river_tile
-			levelData[0][x][y].walkable = false
 		}
 	}
-	levelData[0][x][y].visible = false
+	return flatMap
+}
+
+func compute_noise(x int, y int) (int, bool) {
+	var t int
+	var w bool
+	noise := perlin(float64(x), float64(y), gradient)
+
+	if noise > 30000.0 {
+		t = block_tile2
+		w = false
+	} else if noise > 25000.0 {
+		t = block_tile1
+		w = false
+	} else if noise > 20000.0 {
+		if (x%2+y%2)%2 == 0 {
+			t = parlor_white
+		} else {
+			t = parlor_black
+		}
+		w = true
+	} else if noise > 10000.0 {
+		t = cobble_tile
+		w = true
+	} else if noise > 0.0 {
+		t = grass_tile
+		w = true
+	} else if noise > -30000.0 {
+		t = dirt_tile
+		w = true
+	} else if noise > -40000.0 {
+		t = sand_tile
+		w = true
+	} else {
+		t = river_tile
+		w = false
+	}
+	return t, w
+
 }

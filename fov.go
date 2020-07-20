@@ -9,17 +9,17 @@ type vec struct {
 	y int
 }
 
-func clearVisibility(grid [mapSize][mapSize]*node) {
+func clearVisibility(grid [chunkSize][chunkSize]*node) {
 	for _, row := range grid {
 		for _, node := range row {
-			node.visible = false
+			node.visible = true
 		}
 	}
 }
 
 // adapted from https://www.albertford.com/shadowcasting/
 
-func compute_fov(origin vec, grid [][]*node) {
+func compute_fov(origin vec, grid [chunkSize * 3][chunkSize * 3]*node) {
 
 	grid[origin.x][origin.y].visible = true
 	for i := 0; i < 4; i++ {
@@ -29,14 +29,14 @@ func compute_fov(origin vec, grid [][]*node) {
 	}
 }
 
-func reveal(tile vec, grid [][]*node, quadrant *Quadrant) {
+func reveal(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadrant) {
 	q := transform(quadrant, tile)
 	if in_bounds(q.x, q.y, grid) {
 		grid[q.x][q.y].visible = true
 	}
 }
 
-func is_wall(tile vec, grid [][]*node, quadrant *Quadrant) bool {
+func is_wall(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadrant) bool {
 	var w bool
 	if (vec{}) != tile {
 		w = false
@@ -50,7 +50,7 @@ func is_wall(tile vec, grid [][]*node, quadrant *Quadrant) bool {
 	return w
 }
 
-func in_bounds(x int, y int, grid [][]*node) bool {
+func in_bounds(x int, y int, grid [chunkSize * 3][chunkSize * 3]*node) bool {
 	if x < len(grid) && y < len(grid[0]) && x >= 0 && y >= 0 {
 		return true
 	} else {
@@ -58,7 +58,7 @@ func in_bounds(x int, y int, grid [][]*node) bool {
 	}
 }
 
-func is_floor(tile vec, grid [][]*node, quadrant *Quadrant) bool {
+func is_floor(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadrant) bool {
 	var f bool
 	if (vec{}) != tile {
 		f = false
@@ -70,7 +70,7 @@ func is_floor(tile vec, grid [][]*node, quadrant *Quadrant) bool {
 	return f
 }
 
-func scan(row Row, grid [][]*node, quadrant *Quadrant) {
+func scan(row Row, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadrant) {
 	var prev_tile = vec{}
 	var tiles = generate_tiles(row)
 	for _, tile := range tiles {
