@@ -42,7 +42,7 @@ func is_wall(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadr
 		w = false
 		q := transform(quadrant, tile)
 		if in_bounds(q.x, q.y, grid) {
-			w = !grid[q.x][q.y].walkable
+			w = grid[q.x][q.y].blocks_vision
 		} else {
 			w = true
 		}
@@ -64,7 +64,7 @@ func is_floor(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quad
 		f = false
 		q := transform(quadrant, tile)
 		if in_bounds(q.x, q.y, grid) {
-			f = grid[q.x][q.y].walkable
+			f = !grid[q.x][q.y].blocks_vision
 		}
 	}
 	return f

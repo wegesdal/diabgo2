@@ -25,9 +25,9 @@ var (
 	gy           int
 	tilesImage   *ebiten.Image
 	doodadsImage *ebiten.Image
-	levelData    [3][3][2][chunkSize][chunkSize]*node
+	levelData    [3][3][chunkSize][chunkSize]*node
 	flatMap      [3 * chunkSize][3 * chunkSize]*node
-	gradient     [128][128][2]float64
+	gradient     [64][64][2]float64
 	// endOfTheRoad     *node
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
@@ -44,6 +44,8 @@ var (
 	characters       []*character
 	frames           int
 	second           = time.Tick(time.Second)
+	bossAnim         map[int][]*ebiten.Image
+	creepAnim        map[int][]*ebiten.Image
 )
 
 var (
@@ -170,6 +172,9 @@ func init() {
 	healthGlobe = generateGlobeSprites(healthGlobeImage)
 	manaGlobe = generateGlobeSprites(manaGlobeImage)
 
+	creepAnim = generateCharacterSprites(creepSheet, 256)
+	bossAnim = generateCharacterSprites(bossSheet, 512)
+
 	gx = 1
 	gy = 1
 
@@ -193,12 +198,22 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		for cx := 0; cx < 3; cx++ {
 			for cy := 0; cy < 3; cy++ {
-				clearVisibility(levelData[cx][cy][0])
+				clearVisibility(levelData[cx][cy])
 			}
 		}
 		compute_fov(vec{x: player.actor.x + (1-gx)*chunkSize, y: player.actor.y + (1-gy)*chunkSize}, flatMap)
 	}
 	for _, c := range characters {
+
+		// HANDLE HOT EFFECTS
+		if c.hp == c.maxhp {
+			c.hp_target = 0
+		}
+		if c.hp_target > 0 {
+			c.hp++
+			c.hp_target--
+		}
+
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
 		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
 	}
@@ -235,38 +250,28 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
 
-		tx, ty := getTileXY(g)
-		if inMapRange(tx, ty, levelData[1][1]) {
-			//crashes if selection out of range
-			if levelData[1][1][0][tx][ty].walkable {
-				levelData[1][1][1][tx][ty].tile = rand.Intn(31)
-			}
-		}
+		// tx, ty := getTileXY(g)
+		// if inMapRange(tx, ty, levelData[1]) {
+		// 	//crashes if selection out of range
+		// 	if levelData[1][1][tx][ty].walkable {
+		// 		levelData[1][1][tx][ty].tile = rand.Intn(31)
+		// 	}
+		// }
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key3) {
-
 		tx, ty := getTileXY(g)
-		creepAnim := generateCharacterSprites(creepSheet, 256)
-		creepActor := spawn_actor(tx, ty, "creep", creepAnim)
-		c := spawn_character(creepActor)
-		c.actor.faction = hostile
-		c.prange = 8000.0
-		c.arange = 5000.0
-		actors = append(actors, creepActor)
-		characters = append(characters, c)
+		spawnCreep(tx, ty)
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key4) {
 		tx, ty := getTileXY(g)
-		bossAnim := generateCharacterSprites(bossSheet, 512)
-		bossActor := spawn_actor(tx, ty, "boss", bossAnim)
-		c := spawn_character(bossActor)
-		c.actor.faction = hostile
-		c.prange = 8000.0
-		c.arange = 5000.0
-		actors = append(actors, bossActor)
-		characters = append(characters, c)
+
+		spawnBoss(tx, ty)
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		player.hp_target += 10
 	}
 
 	if g.count%3 == 0 {
@@ -284,121 +289,32 @@ func (g *Game) Update(screen *ebiten.Image) error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x10, 1})
 
-	if player.actor.x < chunkSize*gx {
-		levelData[2] = levelData[1]
-		levelData[1] = levelData[0]
-
-		newRow := [3][2][chunkSize][chunkSize]*node{}
-		for cy := 0; cy < 3; cy++ {
-			for layer := 0; layer < 2; layer++ {
-				for x := 0; x < chunkSize; x++ {
-					for y := 0; y < chunkSize; y++ {
-						newRow[cy][layer][x][y] = &node{x: x + chunkSize*(gx-2), y: y + cy*chunkSize - (1-gy)*chunkSize, tile: sentinal}
-						newRow[cy][layer][x][y].walkable = true
-					}
-				}
-			}
-		}
-
-		levelData[0] = newRow
-
-		gx--
-
-		flatMap = flattenMap()
-	}
-
-	if player.actor.x > chunkSize*(gx+1) {
-		levelData[0] = levelData[1]
-		levelData[1] = levelData[2]
-
-		newRow := [3][2][chunkSize][chunkSize]*node{}
-		for cy := 0; cy < 3; cy++ {
-			for layer := 0; layer < 2; layer++ {
-				for x := 0; x < chunkSize; x++ {
-					for y := 0; y < chunkSize; y++ {
-						newRow[cy][layer][x][y] = &node{x: x + chunkSize*(gx+2), y: y + cy*chunkSize - (1-gy)*chunkSize, tile: sentinal}
-						newRow[cy][layer][x][y].walkable = true
-					}
-				}
-			}
-		}
-
-		levelData[2] = newRow
-
-		gx++
-
-		flatMap = flattenMap()
-	}
-
-	if player.actor.y < chunkSize*gy {
-		for i := 0; i < 3; i++ {
-			levelData[i][2] = levelData[i][1]
-			levelData[i][1] = levelData[i][0]
-		}
-		for i := 0; i < 3; i++ {
-			newCol := [2][chunkSize][chunkSize]*node{}
-			for layer := 0; layer < 2; layer++ {
-				for x := 0; x < chunkSize; x++ {
-					for y := 0; y < chunkSize; y++ {
-						newCol[layer][x][y] = &node{x: x + i*chunkSize - (1-gx)*chunkSize, y: y + chunkSize*(gy-2), tile: sentinal}
-						newCol[layer][x][y].walkable = true
-					}
-				}
-			}
-
-			levelData[i][0] = newCol
-		}
-
-		gy--
-		flatMap = flattenMap()
-	}
-
-	if player.actor.y > chunkSize*(gy+1) {
-		for i := 0; i < 3; i++ {
-			levelData[i][0] = levelData[i][1]
-			levelData[i][1] = levelData[i][2]
-		}
-		for i := 0; i < 3; i++ {
-			newCol := [2][chunkSize][chunkSize]*node{}
-			for layer := 0; layer < 2; layer++ {
-				for x := 0; x < chunkSize; x++ {
-					for y := 0; y < chunkSize; y++ {
-						newCol[layer][x][y] = &node{x: x + i*chunkSize - (1-gx)*chunkSize, y: y + chunkSize*(gy+2), tile: sentinal}
-						newCol[layer][x][y].walkable = true
-					}
-				}
-			}
-
-			levelData[i][2] = newCol
-		}
-
-		gy++
-		flatMap = flattenMap()
-	}
+	chunk()
 
 	var drawLater []*sprite
 	for cx := 0; cx < 3; cx++ {
 		for cy := 0; cy < 3; cy++ {
-			for x := 0; x < len(levelData[cx][cy][0]); x++ {
-				for y := 0; y < len(levelData[cx][cy][0]); y++ {
-					if levelData[cx][cy][0][x][y].visible {
-						if levelData[cx][cy][0][x][y].tile == sentinal {
-							levelData[cx][cy][0][x][y].tile, levelData[cx][cy][0][x][y].walkable = compute_noise(levelData[cx][cy][0][x][y].x, levelData[cx][cy][0][x][y].y)
-							levelData[cx][cy][0][x][y].visible = true
+			for x := 0; x < len(levelData[cx][cy]); x++ {
+				for y := 0; y < len(levelData[cx][cy]); y++ {
+					if levelData[cx][cy][x][y].visible {
+						if levelData[cx][cy][x][y].tile == sentinal {
+
+							levelData[cx][cy][x][y].tile, levelData[cx][cy][x][y].walkable, levelData[cx][cy][x][y].blocks_vision = compute_noise(levelData[cx][cy][x][y].x, levelData[cx][cy][x][y].y)
+							levelData[cx][cy][x][y].visible = true
 						} else {
-							xi, yi := cartesianToIso(float64(levelData[cx][cy][0][x][y].x), float64(levelData[cx][cy][0][x][y].y))
+							xi, yi := cartesianToIso(float64(levelData[cx][cy][x][y].x), float64(levelData[cx][cy][x][y].y))
 
 							g.op.GeoM.Reset()
 							g.op.GeoM.Translate(float64(xi), float64(yi))
 							g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 							g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
-							t := tiles[levelData[cx][cy][0][x][y].tile-1]
+							t := tiles[levelData[cx][cy][x][y].tile-1]
 							// t := tiles[cx+cy*3]
 							screen.DrawImage(t, g.op)
 
-							// d := doodads[levelData[1][x][y].tile]
-							// if levelData[1][x][y].tile > 0 {
+							// d := doodads[levelData[cx][cy][1][x][y].tile]
+							// if levelData[cx][cy][1][x][y].tile > 0 {
 							// 	g.op.GeoM.Translate(-256.0, -400.0)
 							// 	screen.DrawImage(d, g.op)
 							// 	drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
@@ -518,7 +434,7 @@ func main() {
 	g := &Game{
 		Name:         "Diabgo",
 		windowWidth:  1280,
-		windowHeight: 900,
+		windowHeight: 760,
 		tileSize:     64,
 		CamPosX:      0,
 		CamPosY:      0,

@@ -9,14 +9,15 @@ func add(x int, y int) int {
 }
 
 type node struct {
-	x        int
-	y        int
-	parent   *node
-	H        int
-	G        int
-	tile     int
-	walkable bool
-	visible  bool
+	x             int
+	y             int
+	parent        *node
+	H             int
+	G             int
+	tile          int
+	walkable      bool
+	visible       bool
+	blocks_vision bool
 }
 
 func Max(x, y int) int {

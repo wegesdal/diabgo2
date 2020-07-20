@@ -5,13 +5,14 @@ import (
 )
 
 type character struct {
-	actor  *actor
-	maxhp  int
-	dest   *node
-	hp     int
-	prange float64
-	arange float64
-	target *character
+	actor     *actor
+	maxhp     int
+	dest      *node
+	hp        int
+	hp_target int
+	prange    float64
+	arange    float64
+	target    *character
 }
 
 const (
@@ -23,6 +24,7 @@ func spawn_character(a *actor) *character {
 
 	var c = character{actor: a}
 
+	c.hp_target = 0
 	c.dest = &node{x: a.x, y: a.y}
 	c.maxhp = 20
 	c.hp = 10
