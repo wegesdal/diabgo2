@@ -383,7 +383,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 				for y := 0; y < len(levelData[cx][cy][0]); y++ {
 					if levelData[cx][cy][0][x][y].visible {
 						if levelData[cx][cy][0][x][y].tile == sentinal {
-							levelData[cx][cy][0][x][y].tile, levelData[cx][cy][0][x][y].walkable = compute_noise(x+cx*chunkSize+gx*chunkSize, y+cx*chunkSize+gy*chunkSize)
+							levelData[cx][cy][0][x][y].tile, levelData[cx][cy][0][x][y].walkable = compute_noise(levelData[cx][cy][0][x][y].x, levelData[cx][cy][0][x][y].y)
 							levelData[cx][cy][0][x][y].visible = true
 						} else {
 							xi, yi := cartesianToIso(float64(levelData[cx][cy][0][x][y].x), float64(levelData[cx][cy][0][x][y].y))
