@@ -27,7 +27,7 @@ var (
 	doodadsImage *ebiten.Image
 	levelData    [3][3][2][chunkSize][chunkSize]*node
 	flatMap      [3 * chunkSize][3 * chunkSize]*node
-	gradient     [32][32][2]float64
+	gradient     [128][128][2]float64
 	// endOfTheRoad     *node
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
