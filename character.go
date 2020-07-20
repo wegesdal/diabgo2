@@ -43,7 +43,7 @@ func step_forward(a *actor, path []*node) {
 	}
 }
 
-func characterStateMachine(characters []*character, levelData [chunkSize][chunkSize]*node) {
+func characterStateMachine(characters []*character) {
 
 	for _, c := range characters {
 
@@ -82,6 +82,7 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 	}
 
 	for _, c := range characters {
+
 		d := sub_vec64(c.target.actor.coord, c.actor.coord)
 		d_square := d.x*d.x + d.y*d.y
 
@@ -89,16 +90,18 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 		if c.actor.state == idle {
 
 			// if actor has not reached destination, walk
+			if !(math.Abs(float64(c.dest.x)-ix) < 0.3 || math.Abs(float64(c.dest.y)-iy) < 0.3) {
+				c.actor.state = walk
+			}
 
-			if !(math.Abs(float64(c.dest.x)-ix) < 0.5 && math.Abs(float64(c.dest.y)-iy) < 0.5) {
+			if c.actor.name != "player" && c.target != c {
 				c.actor.state = walk
 			}
 
 		} else if c.actor.state == walk {
-
 			// if actor has reached destination, idle
 
-			if math.Abs(float64(c.dest.x)-ix) < 0.5 && math.Abs(float64(c.dest.y)-iy) < 0.5 {
+			if math.Abs(float64(c.dest.x)-ix) < 0.3 && math.Abs(float64(c.dest.y)-iy) < 0.3 {
 				c.actor.state = idle
 			}
 
@@ -109,7 +112,6 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 					c.actor.direction = wayfind(c.actor.x, c.actor.y, c.target.actor.x, c.target.actor.y)
 				} else {
 					// otherwise move towards target unless player (let the player control their movement)
-
 					path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.target.actor.x, y: c.target.actor.y}, flatMap, true)
 
 					if len(path) > 0 {
@@ -119,9 +121,7 @@ func characterStateMachine(characters []*character, levelData [chunkSize][chunkS
 					}
 				}
 			} else {
-
 				path := Astar(&node{x: c.actor.x, y: c.actor.y}, &node{x: c.dest.x, y: c.dest.y}, flatMap, true)
-
 				step_forward(c.actor, path)
 			}
 

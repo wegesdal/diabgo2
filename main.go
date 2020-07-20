@@ -148,8 +148,8 @@ func init() {
 
 	// ACTORS
 	playerAnim := generateCharacterSprites(playerSheet, 256)
-	// playerSpawn := findOpenNode(levelData[1][1][0])
-	playerActor := spawn_actor(24, 24, "player", playerAnim)
+	playerSpawn := findOpenNode()
+	playerActor := spawn_actor(playerSpawn.x, playerSpawn.y, "player", playerAnim)
 	player = spawn_character(playerActor)
 	player.maxhp = 40
 	player.hp = 40
@@ -160,7 +160,7 @@ func init() {
 	characters = append(characters, player)
 
 	terminalAnim := generateActorSprites(terminalSheet, 1, 128)
-	terminalSpawn := findOpenNode(levelData[1][1][0])
+	terminalSpawn := findOpenNode()
 	terminalActor := spawn_actor(terminalSpawn.x, terminalSpawn.y, "terminal", terminalAnim)
 	terminalActor.direction = 3
 	actors = append(actors, terminalActor)
@@ -187,35 +187,9 @@ func inMapRange(x int, y int, levelData [2][chunkSize][chunkSize]*node) bool {
 	}
 }
 
-// func localGrid() ([][]*node, vec) {
-// 	vision_range := 16.0
-// 	minX := int(math.Min(float64(player.actor.x), vision_range))
-// 	maxX := int(math.Min(chunkSize-float64(player.actor.x)-1, vision_range))
-// 	width := minX + maxX
-// 	grid_to_check := make([][]*node, int(vision_range*2))
-
-// 	minY := int(math.Max(0, float64(player.actor.y)-vision_range))
-// 	maxY := int(math.Min(chunkSize-1, float64(player.actor.y)+vision_range))
-// 	for i := 0; i < width; i++ {
-// 		grid_to_check[i] = levelData[1][1][0][player.actor.x+i-minX][minY:maxY]
-// 	}
-// 	origin := vec{x: minX, y: int(math.Min(float64(player.actor.y), vision_range))}
-
-// 	for i := width; i < int(vision_range)-minX; i++ {
-// 		grid_to_check[i] = levelData[1][1][0][player.actor.x+i-minX+chunkSize][minY:maxY]
-// 	}
-// 	if width < int(vision_range*2) {
-// 		fmt.Print(int(vision_range) - minX)
-// 	}
-
-// 	return grid_to_check, origin
-// }
-
 func (g *Game) Update(screen *ebiten.Image) error {
 
 	if g.count%5 == 0 {
-
-		// grid_to_check, origin := localGrid()
 
 		for cx := 0; cx < 3; cx++ {
 			for cy := 0; cy < 3; cy++ {
@@ -255,8 +229,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 		}
 		tx, ty := getTileXY(g)
-
-		player.dest = &node{x: tx - (1-gx)*chunkSize, y: ty - (1-gy)*chunkSize}
+		player.dest = &node{x: tx, y: ty}
 
 	}
 
@@ -274,37 +247,30 @@ func (g *Game) Update(screen *ebiten.Image) error {
 	if inpututil.IsKeyJustPressed(ebiten.Key3) {
 
 		tx, ty := getTileXY(g)
-		if inMapRange(tx, ty, levelData[1][1]) {
-			creepAnim := generateCharacterSprites(creepSheet, 256)
-			creepActor := spawn_actor(tx, ty, "creep", creepAnim)
-			c := spawn_character(creepActor)
-			// c.dest = endOfTheRoad
-			c.actor.faction = hostile
-			c.prange = 8000.0
-			c.arange = 5000.0
-			actors = append(actors, creepActor)
-			characters = append(characters, c)
-		}
+		creepAnim := generateCharacterSprites(creepSheet, 256)
+		creepActor := spawn_actor(tx, ty, "creep", creepAnim)
+		c := spawn_character(creepActor)
+		c.actor.faction = hostile
+		c.prange = 8000.0
+		c.arange = 5000.0
+		actors = append(actors, creepActor)
+		characters = append(characters, c)
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key4) {
-
 		tx, ty := getTileXY(g)
 		bossAnim := generateCharacterSprites(bossSheet, 512)
-		if inMapRange(tx, ty, levelData[1][1]) {
-			bossActor := spawn_actor(tx, ty, "boss", bossAnim)
-			c := spawn_character(bossActor)
-			// c.dest = endOfTheRoad
-			c.actor.faction = hostile
-			c.prange = 8000.0
-			c.arange = 5000.0
-			actors = append(actors, bossActor)
-			characters = append(characters, c)
-		}
+		bossActor := spawn_actor(tx, ty, "boss", bossAnim)
+		c := spawn_character(bossActor)
+		c.actor.faction = hostile
+		c.prange = 8000.0
+		c.arange = 5000.0
+		actors = append(actors, bossActor)
+		characters = append(characters, c)
 	}
 
 	if g.count%3 == 0 {
-		characterStateMachine(characters, levelData[1][1][0])
+		characterStateMachine(characters)
 		terminalStateMachine(actors)
 
 		// terminalStateMachine(actors)
@@ -539,7 +505,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 		ebitenutil.DebugPrint(
 			screen,
-			fmt.Sprintf("TPS: %0.2f\n", ebiten.CurrentTPS()))
+			fmt.Sprintf("TPS: %0.2f\ngx: %d\ngy: %d\n", ebiten.CurrentTPS(), gx, gy))
 
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"math/rand"
 
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -88,14 +89,14 @@ func isoTargetDebug(g *Game, screen *ebiten.Image, coord vec64) {
 	ebitenutil.DrawLine(screen, cx-64.0, cy-64.0, cx-64.0, cy+64.0, colornames.Pink)
 }
 
-func findOpenNode(levelData [chunkSize][chunkSize]*node) *node {
-	// x := rand.Intn(31)
-	// y := rand.Intn(31)
-	// for !levelData[x][y].walkable {
-	// 	x = rand.Intn(31)
-	// 	y = rand.Intn(31)
-	// }
-	return &node{x: 0, y: 0}
+func findOpenNode() *node {
+	x := rand.Intn(chunkSize - 1)
+	y := rand.Intn(chunkSize - 1)
+	for !flatMap[x][y].walkable {
+		x = rand.Intn(chunkSize - 1)
+		y = rand.Intn(chunkSize - 1)
+	}
+	return &node{x: x, y: x}
 }
 
 func getTileXY(g *Game) (int, int) {
@@ -112,5 +113,5 @@ func getTileXY(g *Game) (int, int) {
 	y -= .5 * float64(g.tileSize)
 	//Convert isometric
 	imx, imy := isoToCartesian(x, y)
-	return int(imx) + ((1 - gx) * chunkSize), int(imy+0.5) + ((1 - gy) * chunkSize)
+	return int(imx), int(imy)
 }
