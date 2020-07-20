@@ -421,30 +421,30 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		for cy := 0; cy < 3; cy++ {
 			for x := 0; x < len(levelData[cx][cy][0]); x++ {
 				for y := 0; y < len(levelData[cx][cy][0]); y++ {
-					// if levelData[cx][cy][0][x][y].visible {
-					// if levelData[cx][cy][0][x][y].tile == sentinal {
-					// 	levelData[cx][cy][0][x][y].tile, levelData[cx][cy][0][x][y].walkable = compute_noise(x+cx*chunkSize, y+cx*chunkSize)
-					// 	levelData[cx][cy][0][x][y].visible = true
-					// } else {
-					xi, yi := cartesianToIso(float64(levelData[cx][cy][0][x][y].x), float64(levelData[cx][cy][0][x][y].y))
+					if levelData[cx][cy][0][x][y].visible {
+						if levelData[cx][cy][0][x][y].tile == sentinal {
+							levelData[cx][cy][0][x][y].tile, levelData[cx][cy][0][x][y].walkable = compute_noise(x+cx*chunkSize+gx*chunkSize, y+cx*chunkSize+gy*chunkSize)
+							levelData[cx][cy][0][x][y].visible = true
+						} else {
+							xi, yi := cartesianToIso(float64(levelData[cx][cy][0][x][y].x), float64(levelData[cx][cy][0][x][y].y))
 
-					g.op.GeoM.Reset()
-					g.op.GeoM.Translate(float64(xi), float64(yi))
-					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
+							g.op.GeoM.Reset()
+							g.op.GeoM.Translate(float64(xi), float64(yi))
+							g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+							g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
 
-					// t := tiles[levelData[cx][cy][0][x][y].tile-1]
-					t := tiles[cx+cy*3]
-					screen.DrawImage(t, g.op)
+							t := tiles[levelData[cx][cy][0][x][y].tile-1]
+							// t := tiles[cx+cy*3]
+							screen.DrawImage(t, g.op)
 
-					// d := doodads[levelData[1][x][y].tile]
-					// if levelData[1][x][y].tile > 0 {
-					// 	g.op.GeoM.Translate(-256.0, -400.0)
-					// 	screen.DrawImage(d, g.op)
-					// 	drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
-					// }
-					// }
-					// }
+							// d := doodads[levelData[1][x][y].tile]
+							// if levelData[1][x][y].tile > 0 {
+							// 	g.op.GeoM.Translate(-256.0, -400.0)
+							// 	screen.DrawImage(d, g.op)
+							// 	drawLater = append(drawLater, &sprite{yi: yi, pic: d, geom: g.op.GeoM})
+							// }
+						}
+					}
 				}
 			}
 		}

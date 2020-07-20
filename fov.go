@@ -12,7 +12,7 @@ type vec struct {
 func clearVisibility(grid [chunkSize][chunkSize]*node) {
 	for _, row := range grid {
 		for _, node := range row {
-			node.visible = true
+			node.visible = false
 		}
 	}
 }
