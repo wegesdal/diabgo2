@@ -22,12 +22,12 @@ func dotGridGradient(ix int, iy int, x float64, y float64, gradient [64][64][2]f
 func perlin(x float64, y float64, gradient [64][64][2]float64) float64 {
 
 	// Determine grid cell coordinates
-	x0 := int(63 * x / (chunkSize * 64))
+	x0 := int(63*x/512) % 63
 	if x0 < 0 {
 		x0 += 63
 	}
 	x1 := x0 + 1
-	y0 := int(63 * y / (chunkSize * 64))
+	y0 := int(63*y/512) % 63
 	if y0 < 0 {
 		y0 += 63
 	}

@@ -22,7 +22,7 @@ const (
 )
 
 const (
-	chunkSize = 20
+	chunkSize = 8
 )
 
 func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {

@@ -1,5 +1,10 @@
 package main
 
+import (
+	"math/rand"
+	"time"
+)
+
 func terminalStateMachine(actors []*actor) {
 
 	var player *actor
@@ -30,6 +35,9 @@ func terminalStateMachine(actors []*actor) {
 						player.coord.y += 15.0
 						player.direction = 4
 						a.frame = 0
+						rand.Seed(time.Now().UnixNano())
+						gradient = generateGradient()
+
 					} else {
 						if a.frame < 9 {
 							a.frame++
