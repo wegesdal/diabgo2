@@ -149,7 +149,7 @@ func init() {
 	// ACTORS
 	playerAnim := generateCharacterSprites(playerSheet, 256)
 	// playerSpawn := findOpenNode(levelData[1][1][0])
-	playerActor := spawn_actor(32, 32, "player", playerAnim)
+	playerActor := spawn_actor(24, 24, "player", playerAnim)
 	player = spawn_character(playerActor)
 	player.maxhp = 40
 	player.hp = 40
@@ -341,11 +341,34 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 
 		levelData[0] = newRow
+
 		gx--
+
 		flatMap = flattenMap()
 	}
 
-	// works one direction but not both
+	if player.actor.x > chunkSize*(gx+1) {
+		levelData[0] = levelData[1]
+		levelData[1] = levelData[2]
+
+		newRow := [3][2][chunkSize][chunkSize]*node{}
+		for cy := 0; cy < 3; cy++ {
+			for layer := 0; layer < 2; layer++ {
+				for x := 0; x < chunkSize; x++ {
+					for y := 0; y < chunkSize; y++ {
+						newRow[cy][layer][x][y] = &node{x: x + chunkSize*(gx+2), y: y + cy*chunkSize - (1-gy)*chunkSize, tile: sentinal}
+						newRow[cy][layer][x][y].walkable = true
+					}
+				}
+			}
+		}
+
+		levelData[2] = newRow
+
+		gx++
+
+		flatMap = flattenMap()
+	}
 
 	if player.actor.y < chunkSize*gy {
 		for i := 0; i < 3; i++ {
@@ -367,6 +390,29 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		}
 
 		gy--
+		flatMap = flattenMap()
+	}
+
+	if player.actor.y > chunkSize*(gy+1) {
+		for i := 0; i < 3; i++ {
+			levelData[i][0] = levelData[i][1]
+			levelData[i][1] = levelData[i][2]
+		}
+		for i := 0; i < 3; i++ {
+			newCol := [2][chunkSize][chunkSize]*node{}
+			for layer := 0; layer < 2; layer++ {
+				for x := 0; x < chunkSize; x++ {
+					for y := 0; y < chunkSize; y++ {
+						newCol[layer][x][y] = &node{x: x + i*chunkSize - (1-gx)*chunkSize, y: y + chunkSize*(gy+2), tile: sentinal}
+						newCol[layer][x][y].walkable = true
+					}
+				}
+			}
+
+			levelData[i][2] = newCol
+		}
+
+		gy++
 		flatMap = flattenMap()
 	}
 
