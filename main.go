@@ -21,14 +21,13 @@ import (
 const tileSize = 64.0
 
 var (
-	gx           int
-	gy           int
-	tilesImage   *ebiten.Image
-	doodadsImage *ebiten.Image
-	levelData    [3][3][chunkSize][chunkSize]*node
-	flatMap      [3 * chunkSize][3 * chunkSize]*node
-	gradient     [64][64][2]float64
-	// endOfTheRoad     *node
+	gx               int
+	gy               int
+	tilesImage       *ebiten.Image
+	doodadsImage     *ebiten.Image
+	levelData        [3][3][chunkSize][chunkSize]*node
+	flatMap          [3 * chunkSize][3 * chunkSize]*node
+	gradient         [64][64][2]float64
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
 	healthGlobeImage *ebiten.Image
@@ -193,6 +192,26 @@ func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (flo
 
 func (g *Game) Update(screen *ebiten.Image) error {
 	if g.count%5 == 0 {
+
+		// INTERPOLATE PROJECTILE MOVEMENT
+		for _, p := range projectiles {
+			p.coord.x, p.coord.y = lerp_64(p.coord.x, p.coord.y, p.target.x, p.target.y, p.speed)
+			if p.name == "smoke" {
+				ix, iy := isoToCartesian(p.target.x, p.target.y)
+
+				// rather than modify the flat map, maybe implement another check on vision for smoke presence that is temporary
+				if p.timer > 0 {
+					if (int(ix)+(1-gx)*chunkSize) > 0 && int(iy)+(1-gy)*chunkSize > 0 && (int(ix)+(1-gx)*chunkSize) < chunkSize*3-1 && (int(iy)+(1-gy)*chunkSize) < chunkSize*3-1 {
+						flatMap[int(ix)+(1-gx)*chunkSize][int(iy)+(1-gy)*chunkSize].blocks_vision = true
+					}
+				} else {
+					if (int(ix)+(1-gx)*chunkSize) > 0 && int(iy)+(1-gy)*chunkSize > 0 && (int(ix)+(1-gx)*chunkSize) < chunkSize*3-1 && (int(iy)+(1-gy)*chunkSize) < chunkSize*3-1 {
+						flatMap[int(ix)+(1-gx)*chunkSize][int(iy)+(1-gy)*chunkSize].blocks_vision = false
+					}
+				}
+			}
+		}
+
 		for cx := 0; cx < 3; cx++ {
 			for cy := 0; cy < 3; cy++ {
 				clearVisibility(levelData[cx][cy])
@@ -205,11 +224,6 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		// INTERPOLATE CHARACTER MOVEMENT
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
 		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
-	}
-
-	// INTERPOLATE PROJECTILE MOVEMENT
-	for _, p := range projectiles {
-		p.coord.x, p.coord.y = lerp_64(p.coord.x, p.coord.y, p.target.x, p.target.y, p.speed)
 	}
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
@@ -274,13 +288,34 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
 		//Get the cursor position
+		player.actor.state = cast
+		player.actor.frame = 0
+
 		mx, my := ebiten.CursorPosition()
 		fmx := float64(mx) - float64(g.windowWidth)/2.0
 		fmy := float64(my) - float64(g.windowHeight)/2.0
 
 		x, y := fmx+g.CamPosX, fmy-g.CamPosY
-
-		projectiles = append(projectiles, spawnProjectile(player.actor.coord, vec64{x: x, y: y}, 10.0, 0.1))
+		radians := math.Atan2(float64(fmx), float64(fmy))
+		switch degrees := 180 + radians*180/3.14159265; {
+		case degrees > 315:
+			player.actor.direction = 5
+		case degrees > 270:
+			player.actor.direction = 6
+		case degrees > 225:
+			player.actor.direction = 7
+		case degrees > 180:
+			player.actor.direction = 0
+		case degrees > 135:
+			player.actor.direction = 1
+		case degrees > 90:
+			player.actor.direction = 2
+		case degrees > 45:
+			player.actor.direction = 3
+		case degrees > 0:
+			player.actor.direction = 4
+		}
+		projectiles = append(projectiles, spawnProjectile(player.actor.coord, vec64{x: x, y: y}, 10.0, 0.1, "smoke"))
 	}
 
 	if g.count%3 == 0 {
@@ -341,6 +376,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			isoSquare(g, screen, c.actor.coord, 2.0, c.actor.faction)
 			isoTargetDebug(g, screen, c.actor.coord)
 		}
+
 	}
 
 	// DRAW ACTORS
@@ -352,45 +388,53 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// widgets will have an anims length of 1
 		startingFrame = a.direction * 10
 
-		// if levelData[1][1][0][a.x][a.y].visible {
-		if len(a.anims) == 6 {
-			g.op.GeoM.Reset()
+		// convert map coordinates to global coordinates
+		x := a.x + (1-gx)*chunkSize
+		y := a.y + (1-gy)*chunkSize
 
-			g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-			if a.name == "boss" {
-				g.op.GeoM.Translate(-224.0, -300.0)
+		if x > 0 && x < chunkSize*3-1 && y > 0 && y < chunkSize*3-1 {
+			if flatMap[x][y].visible {
+				if len(a.anims) == 6 {
+					g.op.GeoM.Reset()
+
+					g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
+					if a.name == "boss" {
+						g.op.GeoM.Translate(-224.0, -300.0)
+					} else {
+						g.op.GeoM.Translate(-96.0, -128.0)
+					}
+					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
+
+					// The screen should be avoided as a render source
+					// If I want the tiles to overlap the feet of the gopher, I'll need to
+					// Create another render source for the gopher to prevent conflicting render calls
+					// And then insert it into the painter's algorithm
+					// screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], g.op)
+
+					drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[a.state][(a.frame + startingFrame)], geom: g.op.GeoM})
+
+					// targetRect(player.target.actor.coord, imd, player.target.actor.faction)
+					// isoSquare(player.target.actor.coord, 3, imd, player.target.actor.faction)
+
+				} else {
+					g.op.GeoM.Reset()
+					// DRAW WIDGETS
+					g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
+					g.op.GeoM.Translate(-96.0, -96.0)
+					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
+					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
+
+					// raise y by 60 after i make a vec add fn
+					//screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
+
+					drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[4][(a.frame + startingFrame)], geom: g.op.GeoM})
+
+				}
 			} else {
-				g.op.GeoM.Translate(-96.0, -128.0)
+				a.state = idle
 			}
-			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
-
-			// The screen should be avoided as a render source
-			// If I want the tiles to overlap the feet of the gopher, I'll need to
-			// Create another render source for the gopher to prevent conflicting render calls
-			// And then insert it into the painter's algorithm
-			// screen.DrawImage(a.anims[a.state][(a.frame+startingFrame)], g.op)
-
-			drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[a.state][(a.frame + startingFrame)], geom: g.op.GeoM})
-
-			// targetRect(player.target.actor.coord, imd, player.target.actor.faction)
-			// isoSquare(player.target.actor.coord, 3, imd, player.target.actor.faction)
-
-		} else {
-			g.op.GeoM.Reset()
-			// DRAW WIDGETS
-			g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
-			g.op.GeoM.Translate(-96.0, -96.0)
-			g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
-			g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
-
-			// raise y by 60 after i make a vec add fn
-			//screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
-
-			drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[4][(a.frame + startingFrame)], geom: g.op.GeoM})
-
 		}
-		// }
 	}
 
 	sort.Slice(drawLater[:], func(i, j int) bool {

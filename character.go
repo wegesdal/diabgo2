@@ -97,6 +97,11 @@ func characterStateMachine(characters []*character) {
 		d_square := d.x*d.x + d.y*d.y
 
 		ix, iy := isoToCartesian(c.actor.coord.x, c.actor.coord.y)
+		if c.actor.state == cast {
+			if c.actor.frame == 9 {
+				c.actor.state = idle
+			}
+		}
 		if c.actor.state == idle {
 
 			// if actor has not reached destination, walk

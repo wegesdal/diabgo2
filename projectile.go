@@ -12,12 +12,13 @@ type projectile struct {
 	coord     vec64
 	target    vec64
 	particles *list.List
-	max_range float64
+	timer     float64
 	speed     float64
+	name      string
 }
 
-func spawnProjectile(coord vec64, target vec64, max_range float64, speed float64) *projectile {
-	p := &projectile{coord: coord, target: target, max_range: max_range, speed: speed}
+func spawnProjectile(coord vec64, target vec64, timer float64, speed float64, name string) *projectile {
+	p := &projectile{coord: coord, target: target, timer: timer, speed: speed, name: name}
 	p.particles = list.New()
 	return p
 }
@@ -51,13 +52,13 @@ func (p *particle) terminated() bool {
 
 func projectileStateMachine(projectiles []*projectile) {
 	for _, p := range projectiles {
-		if p.max_range > 0 {
+		if p.timer > 0 {
 
 			if p.particles.Len() < 100 && rand.Intn(4) < 3 {
 				// EMIT
 				p.particles.PushBack(newParticle(smokeImage))
 			}
-			p.max_range--
+			p.timer--
 		}
 
 		for e := p.particles.Front(); e != nil; e = e.Next() {

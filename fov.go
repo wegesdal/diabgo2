@@ -41,6 +41,7 @@ func is_wall(tile vec, grid [chunkSize * 3][chunkSize * 3]*node, quadrant *Quadr
 	if (vec{}) != tile {
 		w = false
 		q := transform(quadrant, tile)
+
 		if in_bounds(q.x, q.y, grid) {
 			w = grid[q.x][q.y].blocks_vision
 		} else {
