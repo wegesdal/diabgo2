@@ -47,6 +47,7 @@ var (
 	second           = time.Tick(time.Second)
 	bossAnim         map[int][]*ebiten.Image
 	creepAnim        map[int][]*ebiten.Image
+	smokeImage       *ebiten.Image
 )
 
 var (
@@ -139,6 +140,11 @@ func init() {
 		log.Fatal(err)
 	}
 
+	smokeImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/smoke.png", ebiten.FilterDefault)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	//INITIALIZE WORLD OBJECTS
 
 	// MAP
@@ -201,8 +207,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
 	}
 
+	// INTERPOLATE PROJECTILE MOVEMENT
 	for _, p := range projectiles {
-		p.actor.coord.x, p.actor.coord.y = lerp_64(p.actor.coord.x, p.actor.coord.y, p.target.x, p.target.y, p.speed)
+		p.coord.x, p.coord.y = lerp_64(p.coord.x, p.coord.y, p.target.x, p.target.y, p.speed)
 	}
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
@@ -261,9 +268,25 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		player.hp_target += 10
 	}
 
+	if inpututil.IsKeyJustPressed(ebiten.KeyQ) {
+		player.hp_target += 10
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
+		//Get the cursor position
+		mx, my := ebiten.CursorPosition()
+		fmx := float64(mx) - float64(g.windowWidth)/2.0
+		fmy := float64(my) - float64(g.windowHeight)/2.0
+
+		x, y := fmx+g.CamPosX, fmy-g.CamPosY
+
+		projectiles = append(projectiles, spawnProjectile(player.actor.coord, vec64{x: x, y: y}, 10.0, 0.1))
+	}
+
 	if g.count%3 == 0 {
 		characterStateMachine(characters)
 		terminalStateMachine(actors)
+		projectileStateMachine(projectiles)
 
 		// terminalStateMachine(actors)
 		actors, characters = removeDeadCharacters(actors, characters)
@@ -379,6 +402,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.op.GeoM = s.geom
 		screen.DrawImage(s.pic, g.op)
 	}
+
+	// DRAW PROJECTILE PARTICLES
+	drawProjectiles(g, screen)
 
 	// drawHealthPlates(g, screen, characters)
 
