@@ -42,6 +42,7 @@ var (
 	player           *character
 	actors           []*actor
 	characters       []*character
+	projectiles      []*projectile
 	frames           int
 	second           = time.Tick(time.Second)
 	bossAnim         map[int][]*ebiten.Image
@@ -184,18 +185,8 @@ func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (flo
 	return (1-t)*v0x + t*v1x, (1-t)*v0y + t*v1y
 }
 
-func inMapRange(x int, y int, levelData [2][chunkSize][chunkSize]*node) bool {
-	if x >= 0 && x < len(levelData[0]) && y >= 0 && y < len(levelData[0]) {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (g *Game) Update(screen *ebiten.Image) error {
-
 	if g.count%5 == 0 {
-
 		for cx := 0; cx < 3; cx++ {
 			for cy := 0; cy < 3; cy++ {
 				clearVisibility(levelData[cx][cy])
@@ -203,19 +194,15 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 		compute_fov(vec{x: player.actor.x + (1-gx)*chunkSize, y: player.actor.y + (1-gy)*chunkSize}, flatMap)
 	}
+
 	for _, c := range characters {
-
-		// HANDLE HOT EFFECTS
-		if c.hp == c.maxhp {
-			c.hp_target = 0
-		}
-		if c.hp_target > 0 {
-			c.hp++
-			c.hp_target--
-		}
-
+		// INTERPOLATE CHARACTER MOVEMENT
 		cx, cy := cartesianToIso(float64(c.actor.x), float64(c.actor.y))
 		c.actor.coord.x, c.actor.coord.y = lerp_64(c.actor.coord.x, c.actor.coord.y, cx, cy, 0.06)
+	}
+
+	for _, p := range projectiles {
+		p.actor.coord.x, p.actor.coord.y = lerp_64(p.actor.coord.x, p.actor.coord.y, p.target.x, p.target.y, p.speed)
 	}
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)

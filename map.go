@@ -181,7 +181,7 @@ func spawnCreep(x int, y int) {
 	creepActor := spawn_actor(x, y, "creep", creepAnim)
 	c := spawn_character(creepActor)
 	c.actor.faction = hostile
-	c.prange = 8000.0
+	c.prange = 18000.0
 	c.arange = 5000.0
 	actors = append(actors, creepActor)
 	characters = append(characters, c)
@@ -191,7 +191,7 @@ func spawnBoss(x int, y int) {
 	bossActor := spawn_actor(x, y, "boss", bossAnim)
 	c := spawn_character(bossActor)
 	c.actor.faction = hostile
-	c.prange = 8000.0
+	c.prange = 18000.0
 	c.arange = 5000.0
 	actors = append(actors, bossActor)
 	characters = append(characters, c)

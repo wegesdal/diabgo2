@@ -48,6 +48,14 @@ func step_forward(a *actor, path []*node) {
 func characterStateMachine(characters []*character) {
 
 	for _, c := range characters {
+		// HANDLE HOT EFFECTS
+		if c.hp == c.maxhp {
+			c.hp_target = 0
+		}
+		if c.hp_target > 0 {
+			c.hp++
+			c.hp_target--
+		}
 
 		// advance the animation frame
 		c.actor.frame = (c.actor.frame + 1) % 10
