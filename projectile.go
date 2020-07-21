@@ -102,6 +102,8 @@ func drawProjectiles(g *Game, screen *ebiten.Image) {
 			rate := float64(particle.count) / float64(particle.maxCount)
 			alpha := 0.0
 			if rate < 0.2 {
+				alpha = rate / 0.2
+			} else if rate > 0.8 {
 				alpha = (1 - rate) / 0.2
 			} else {
 				alpha = 1
