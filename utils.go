@@ -71,7 +71,9 @@ func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, faction int) {
 	v3x, v3y := cartesianToIso(hs, -hs-1)
 	v4x, v4y := cartesianToIso(-hs, -hs-1)
 
-	cx, cy := centerXY.x-g.CamPosX+float64(g.windowWidth/2.0), centerXY.y+g.CamPosY+float64(g.windowHeight/2.0)+40.0
+	// WORK ON OFFSET
+
+	cx, cy := centerXY.x-g.CamPosX+float64(g.windowWidth/2.0), centerXY.y+g.CamPosY+float64(g.windowHeight/2.0)+72.0
 
 	ebitenutil.DrawLine(screen, v1x+cx, v1y+cy, v2x+cx, v2y+cy, factionColor(faction, light))
 	ebitenutil.DrawLine(screen, v2x+cx, v2y+cy, v3x+cx, v3y+cy, factionColor(faction, light))
