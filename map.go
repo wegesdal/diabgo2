@@ -39,59 +39,12 @@ func generateDoodads(tilesImage *ebiten.Image) []*ebiten.Image {
 // TODO: Clean up art file and import structure
 func generateTiles(tilesImage *ebiten.Image) []*ebiten.Image {
 	var tiles []*ebiten.Image
-	tileSize := 64
 
-	// grass
-	sx := 2432
-	sy := 640
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// dirt
-	sx = 128
-	sy = 2304
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// road
-	sx = 2208
-	sy = 320
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// cobble
-	sx = 128
-	sy = 256
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// sand
-	sx = 1664
-	sy = 1472
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// river
-	sx = 896
-	sy = 64
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// block
-	sx = 128
-	sy = 384
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// block2
-	sx = 128
-	sy = 320
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// parlor white
-
-	sx = 128
-	sy = 896
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
-
-	// parlor black
-
-	sx = 1664
-	sy = 1728
-	tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
+	for i := 0; i < 22; i++ {
+		sx := (i % 5) * tileSize
+		sy := (i / 5) * tileSize
+		tiles = append(tiles, tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image))
+	}
 	return tiles
 }
 
@@ -131,7 +84,7 @@ func compute_noise(x int, y int) (int, bool, bool) {
 	noise := perlin(float64(x), float64(y), gradient)
 
 	if noise > 40000.0 {
-		t = block_tile2
+		t = 17
 		w = false
 		v = true
 	} else if noise > 35000.0 {
@@ -139,14 +92,7 @@ func compute_noise(x int, y int) (int, bool, bool) {
 		w = false
 		v = true
 	} else if noise > 20000.0 {
-		if (x%2+y%2)%2 == 0 {
-			t = parlor_white
-		} else {
-			if rand.Intn(1000) == 0 {
-				spawnBoss(x, y)
-			}
-			t = parlor_black
-		}
+		t = road_tile
 		w = true
 		v = false
 	} else if noise > 10000.0 {
@@ -157,23 +103,37 @@ func compute_noise(x int, y int) (int, bool, bool) {
 		t = grass_tile
 		w = true
 		v = false
-		if rand.Intn(100) == 0 {
+		if rand.Intn(200) == 0 {
 			spawnCreep(x, y)
 		}
-
 	} else if noise > -30000.0 {
 		t = dirt_tile
 		w = true
 		v = false
+		if rand.Intn(200) == 0 {
+			spawnCreep(x, y)
+		}
 	} else if noise > -70000.0 {
 		t = sand_tile
 		w = true
 		v = false
-	} else {
+	} else if noise > -90000.0 {
 		t = river_tile
 		w = false
 		v = false
+	} else {
+		if (x%2+y%2)%2 == 0 {
+			t = 20
+		} else {
+			if rand.Intn(1000) == 0 {
+				spawnBoss(x, y)
+			}
+			t = 1
+		}
+		w = true
+		v = false
 	}
+
 	return t, w, v
 }
 
@@ -181,7 +141,7 @@ func spawnCreep(x int, y int) {
 	creepActor := spawn_actor(x, y, "creep", creepAnim)
 	c := spawn_character(creepActor)
 	c.actor.faction = hostile
-	c.prange = 18000.0
+	c.prange = 100000.0
 	c.arange = 5000.0
 	actors = append(actors, creepActor)
 	characters = append(characters, c)
@@ -191,7 +151,7 @@ func spawnBoss(x int, y int) {
 	bossActor := spawn_actor(x, y, "boss", bossAnim)
 	c := spawn_character(bossActor)
 	c.actor.faction = hostile
-	c.prange = 18000.0
+	c.prange = 100000.0
 	c.arange = 5000.0
 	actors = append(actors, bossActor)
 	characters = append(characters, c)

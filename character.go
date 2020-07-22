@@ -157,6 +157,7 @@ func characterStateMachine(characters []*character) {
 			}
 		}
 	}
+	removeDeadCharacters()
 }
 
 // func drawHealthPlates(g *Game, screen *ebiten.Image, characters []*character) {
@@ -193,7 +194,7 @@ func characterStateMachine(characters []*character) {
 
 // }
 
-func removeDeadActors(c *character, actors []*actor) []*actor {
+func removeDeadActors(c *character) {
 	for j, a := range actors {
 		// remove the actor from the actors slice first
 		if a == c.actor {
@@ -202,29 +203,18 @@ func removeDeadActors(c *character, actors []*actor) []*actor {
 			actors = actors[:len(actors)-1]
 		}
 	}
-	return actors
 }
 
-func removeDeadCharacters(actors []*actor, characters []*character) ([]*actor, []*character) {
-
+func removeDeadCharacters() {
 	for i, c := range characters {
-		// KILL CREEPS WHO REACH END OF THE ROAD
-		// TODO: ADJUST SCORE
-		// if c.actor.name == "creep" && c.actor.x == c.dest.x && c.actor.y == c.dest.y && c.actor.state != dead {
-		// 	c.actor.frame = 0
-		// 	c.actor.state = dead
-		// }
 		if c.actor.state == dead && c.actor.frame == 9 {
-
-			actors = removeDeadActors(c, actors)
-
+			removeDeadActors(c)
 			// remove the character from the character slice
 			characters[i] = characters[len(characters)-1]
 			characters[len(characters)-1] = nil
 			characters = characters[:len(characters)-1]
-			// break out of slice (dangerous to continue to modify a slice while iterating it)
+			removeDeadCharacters()
 			break
 		}
 	}
-	return actors, characters
 }

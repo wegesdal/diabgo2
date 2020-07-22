@@ -52,15 +52,13 @@ func (p *particle) terminated() bool {
 
 func projectileStateMachine(projectiles []*projectile) {
 	for _, p := range projectiles {
-		if p.timer > 0 {
-
+		if p.timer > 20 {
 			if p.particles.Len() < 100 && rand.Intn(4) < 3 {
 				// EMIT
 				p.particles.PushBack(newParticle(smokeImage))
 			}
-			p.timer--
 		}
-
+		p.timer--
 		for e := p.particles.Front(); e != nil; e = e.Next() {
 			s := e.Value.(*particle)
 			s.update()
@@ -68,7 +66,19 @@ func projectileStateMachine(projectiles []*projectile) {
 				defer p.particles.Remove(e)
 			}
 		}
+	}
+	removeDeadProjectiles()
+}
 
+func removeDeadProjectiles() {
+	for i, p := range projectiles {
+		if p.timer <= 0 && p.particles.Len() == 0 {
+			projectiles[i] = projectiles[len(projectiles)-1]
+			projectiles[len(projectiles)-1] = nil
+			projectiles = projectiles[:len(projectiles)-1]
+			removeDeadProjectiles()
+			break
+		}
 	}
 }
 

@@ -18,7 +18,7 @@ import (
 	"golang.org/x/image/font"
 )
 
-const tileSize = 64.0
+const tileSize = 128.0
 
 var (
 	gx               int
@@ -27,7 +27,7 @@ var (
 	doodadsImage     *ebiten.Image
 	levelData        [3][3][chunkSize][chunkSize]*node
 	flatMap          [3 * chunkSize][3 * chunkSize]*node
-	gradient         [64][64][2]float64
+	gradient         [gradSize][gradSize][2]float64
 	tiles            []*ebiten.Image
 	doodads          []*ebiten.Image
 	healthGlobeImage *ebiten.Image
@@ -99,12 +99,12 @@ func init() {
 	})
 
 	// LOAD ASSETS
-	tilesImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/dawnblocker.png", ebiten.FilterDefault)
+	tilesImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/blocks.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	playerSheet, _, err = ebitenutil.NewImageFromFile("assets/sprites/fs_gopher.png", ebiten.FilterDefault)
+	playerSheet, _, err = ebitenutil.NewImageFromFile("assets/sprites/gopher.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	bossSheet, _, err = ebitenutil.NewImageFromFile("assets/sprites/fs_diabgopher.png", ebiten.FilterDefault)
+	bossSheet, _, err = ebitenutil.NewImageFromFile("assets/sprites/diabgopher.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -190,34 +190,44 @@ func lerp_64(v0x float64, v0y float64, v1x float64, v1y float64, t float64) (flo
 	return (1-t)*v0x + t*v1x, (1-t)*v0y + t*v1y
 }
 
+func globalToMapCoords(x int, y int) (int, int) {
+	return int(x) + (1-gx)*chunkSize, int(y) + (1-gy)*chunkSize
+}
+
 func (g *Game) Update(screen *ebiten.Image) error {
 	if g.count%5 == 0 {
 
 		// INTERPOLATE PROJECTILE MOVEMENT
 		for _, p := range projectiles {
 			p.coord.x, p.coord.y = lerp_64(p.coord.x, p.coord.y, p.target.x, p.target.y, p.speed)
-			if p.name == "smoke" {
-				ix, iy := isoToCartesian(p.target.x, p.target.y)
+			if p.timer > 0 {
+				if p.name == "smoke" {
+					for _, c := range characters {
+						if math.Abs(float64(c.actor.coord.x-p.coord.x))+math.Abs(float64(c.actor.coord.y-p.coord.y)) < 50.0 {
+							c.hp--
 
-				// rather than modify the flat map, maybe implement another check on vision for smoke presence that is temporary
-				if p.timer > 0 {
-					if (int(ix)+(1-gx)*chunkSize) > 0 && int(iy)+(1-gy)*chunkSize > 0 && (int(ix)+(1-gx)*chunkSize) < chunkSize*3-1 && (int(iy)+(1-gy)*chunkSize) < chunkSize*3-1 {
-						flatMap[int(ix)+(1-gx)*chunkSize][int(iy)+(1-gy)*chunkSize].blocks_vision = true
+							if c.hp == 0 {
+								c.actor.frame = 0
+								c.actor.state = dead
+							}
+						}
 					}
-				} else {
-					if (int(ix)+(1-gx)*chunkSize) > 0 && int(iy)+(1-gy)*chunkSize > 0 && (int(ix)+(1-gx)*chunkSize) < chunkSize*3-1 && (int(iy)+(1-gy)*chunkSize) < chunkSize*3-1 {
-						flatMap[int(ix)+(1-gx)*chunkSize][int(iy)+(1-gy)*chunkSize].blocks_vision = false
-					}
+					// ix, iy := isoToCartesian(p.coord.x, p.coord.y)
+					// proj_map_x, proj_map_y := globalToMapCoords(int(ix), int(iy))
+					// if proj_map_x > 0 && proj_map_y > 0 && proj_map_x < chunkSize*3-1 && proj_map_y < chunkSize*3-1 {
+					// 	// flatMap[gx][gy].blocks_vision = true
+					// }
 				}
 			}
 		}
 
-		for cx := 0; cx < 3; cx++ {
-			for cy := 0; cy < 3; cy++ {
-				clearVisibility(levelData[cx][cy])
+		for chunk_x := 0; chunk_x < 3; chunk_x++ {
+			for chunk_y := 0; chunk_y < 3; chunk_y++ {
+				clearVisibility(levelData[chunk_x][chunk_y])
 			}
 		}
-		compute_fov(vec{x: player.actor.x + (1-gx)*chunkSize, y: player.actor.y + (1-gy)*chunkSize}, flatMap)
+		player_map_x, player_map_y := globalToMapCoords(player.actor.x, player.actor.y)
+		compute_fov(vec{x: player_map_x, y: player_map_y}, flatMap)
 	}
 
 	for _, c := range characters {
@@ -228,6 +238,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	g.CamPosX, g.CamPosY = lerp_64(g.CamPosX, g.CamPosY, player.actor.coord.x, -player.actor.coord.y, 0.03)
 
+	// LEFT MOUSE (PRIMARY ACTION)
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 
 		player.actor.state = walk
@@ -239,21 +250,18 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		fmx := float64(mx) - float64(g.windowWidth)/2.0
 		fmy := float64(my) - float64(g.windowHeight)/2.0
 
+		// TARGETING BOX TRIGGER
 		x, y := fmx+g.CamPosX, fmy-g.CamPosY
-
 		offset := vec64{x: 32.0, y: -30.0}
-
 		for _, c := range characters {
 			diff := sub_vec64(c.actor.coord, vec64{x: x - offset.x, y: y - offset.y})
 			if math.Abs(diff.x) < 64 && math.Abs(diff.y) < 64 && c != player {
 				player.target = c
 				break
 			}
-
 		}
 		tx, ty := getTileXY(g)
 		player.dest = &node{x: tx, y: ty}
-
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
@@ -288,13 +296,13 @@ func (g *Game) Update(screen *ebiten.Image) error {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyW) {
 		//Get the cursor position
+
+		// POINT SPELL CAST IN CORRECT DIRECTION
 		player.actor.state = cast
 		player.actor.frame = 0
-
 		mx, my := ebiten.CursorPosition()
 		fmx := float64(mx) - float64(g.windowWidth)/2.0
 		fmy := float64(my) - float64(g.windowHeight)/2.0
-
 		x, y := fmx+g.CamPosX, fmy-g.CamPosY
 		radians := math.Atan2(float64(fmx), float64(fmy))
 		switch degrees := 180 + radians*180/3.14159265; {
@@ -315,7 +323,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		case degrees > 0:
 			player.actor.direction = 4
 		}
-		projectiles = append(projectiles, spawnProjectile(player.actor.coord, vec64{x: x, y: y}, 10.0, 0.1, "smoke"))
+		projectiles = append(projectiles, spawnProjectile(player.actor.coord, vec64{x: x, y: y}, 30.0, 0.2, "smoke"))
 	}
 
 	if g.count%3 == 0 {
@@ -323,11 +331,9 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		terminalStateMachine(actors)
 		projectileStateMachine(projectiles)
 
-		// terminalStateMachine(actors)
-		actors, characters = removeDeadCharacters(actors, characters)
-
 	}
 	g.count++
+
 	return nil
 }
 
@@ -373,24 +379,21 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, c := range characters {
 		if c == player.target {
-			isoSquare(g, screen, c.actor.coord, 2.0, c.actor.faction)
+			isoSquare(g, screen, c.actor.coord, c.actor.faction)
 			isoTargetDebug(g, screen, c.actor.coord)
 		}
-
 	}
 
 	// DRAW ACTORS
 	for _, a := range actors {
 		startingFrame := 0
 		// DRAW CHARACTER
-		// the length of anims tells you if this is a character or item
+		// the length of anims tells you if this is a character or widget
 		// characters will have an anims length of 6
 		// widgets will have an anims length of 1
 		startingFrame = a.direction * 10
 
-		// convert map coordinates to global coordinates
-		x := a.x + (1-gx)*chunkSize
-		y := a.y + (1-gy)*chunkSize
+		x, y := globalToMapCoords(a.x, a.y)
 
 		if x > 0 && x < chunkSize*3-1 && y > 0 && y < chunkSize*3-1 {
 			if flatMap[x][y].visible {
@@ -401,7 +404,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 					if a.name == "boss" {
 						g.op.GeoM.Translate(-224.0, -300.0)
 					} else {
-						g.op.GeoM.Translate(-96.0, -128.0)
+						g.op.GeoM.Translate(-72.0, -96.0)
 					}
 					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
@@ -414,19 +417,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 					drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[a.state][(a.frame + startingFrame)], geom: g.op.GeoM})
 
-					// targetRect(player.target.actor.coord, imd, player.target.actor.faction)
-					// isoSquare(player.target.actor.coord, 3, imd, player.target.actor.faction)
-
 				} else {
 					g.op.GeoM.Reset()
+
 					// DRAW WIDGETS
 					g.op.GeoM.Translate(float64(a.coord.x), float64(a.coord.y))
 					g.op.GeoM.Translate(-96.0, -96.0)
 					g.op.GeoM.Translate(-g.CamPosX, g.CamPosY)
 					g.op.GeoM.Translate(float64(g.windowWidth/2.0), float64(g.windowHeight/2.0))
-
-					// raise y by 60 after i make a vec add fn
-					//screen.DrawImage(a.anims[4][(a.frame+startingFrame)], g.op)
 
 					drawLater = append(drawLater, &sprite{yi: a.coord.y, pic: a.anims[4][(a.frame + startingFrame)], geom: g.op.GeoM})
 
@@ -452,16 +450,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// drawHealthPlates(g, screen, characters)
 
-	// for _, a := range actors {
-
-	// 	isoSquare(g, screen, a.coord, 2.0, a.faction)
-	// }
-
 	// UI
 	// Draw the sample text
 	text.Draw(screen, sampleText, exocet_face, g.windowWidth-230, 30, color.White)
 
-	// TODO: LERP THE RESOURCE GLOBE FRAMES
 	if player.hp > 0 {
 		g.op.GeoM.Reset()
 		percentHealth := player.hp * 100 / player.maxhp
@@ -492,7 +484,6 @@ func main() {
 		Name:         "Diabgo",
 		windowWidth:  1280,
 		windowHeight: 760,
-		tileSize:     64,
 		CamPosX:      0,
 		CamPosY:      0,
 		CamSpeed:     500,

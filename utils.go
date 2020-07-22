@@ -60,12 +60,12 @@ func insidePolygon(polygon []vec64, N int, p vec64) bool {
 	return b
 }
 
-func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, size int, faction int) {
+func isoSquare(g *Game, screen *ebiten.Image, centerXY vec64, faction int) {
 	// 	imd.Color = factionColor(faction, light)
-	hs := float64(size / 2)
 	// y_offset := -10.0
 	// 	centerXY = pixel.Vec.Add(centerXY, pixel.Vec{X: 0, Y: y_offset})
 
+	hs := 0.5
 	v1x, v1y := cartesianToIso(-hs, hs-1)
 	v2x, v2y := cartesianToIso(hs, hs-1)
 	v3x, v3y := cartesianToIso(hs, -hs-1)
@@ -109,9 +109,10 @@ func getTileXY(g *Game) (int, int) {
 	x, y := fmx+g.CamPosX, fmy-g.CamPosY
 
 	//Do a half tile mouse shift because of our perspective
-	x -= .5 * float64(g.tileSize)
-	y -= .5 * float64(g.tileSize)
+	x -= .5 * float64(tileSize)
+	y -= .5 * float64(tileSize)
 	//Convert isometric
 	imx, imy := isoToCartesian(x, y)
-	return int(imx), int(imy)
+
+	return int(math.Ceil(float64(imx))), int(math.Ceil(float64(imy)))
 }
