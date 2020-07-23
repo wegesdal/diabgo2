@@ -50,7 +50,7 @@ var (
 )
 
 var (
-	sampleText  = `Spooky Forest`
+	sampleText  = `Spooky Manor`
 	exocet_face font.Face
 )
 
@@ -129,12 +129,12 @@ func init() {
 		log.Fatal(err)
 	}
 
-	healthGlobeImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/fs_sphere_red.png", ebiten.FilterDefault)
+	healthGlobeImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/sphere_red.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	manaGlobeImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/fs_sphere_blue.png", ebiten.FilterDefault)
+	manaGlobeImage, _, err = ebitenutil.NewImageFromFile("assets/sprites/sphere_blue.png", ebiten.FilterDefault)
 	if err != nil {
 		log.Fatal(err)
 	}

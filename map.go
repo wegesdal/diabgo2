@@ -87,40 +87,6 @@ func compute_noise(x int, y int) (int, bool, bool) {
 		t = 17
 		w = false
 		v = true
-	} else if noise > 35000.0 {
-		t = block_tile1
-		w = false
-		v = true
-	} else if noise > 20000.0 {
-		t = road_tile
-		w = true
-		v = false
-	} else if noise > 10000.0 {
-		t = cobble_tile
-		w = true
-		v = false
-	} else if noise > 0.0 {
-		t = grass_tile
-		w = true
-		v = false
-		if rand.Intn(200) == 0 {
-			spawnCreep(x, y)
-		}
-	} else if noise > -30000.0 {
-		t = dirt_tile
-		w = true
-		v = false
-		if rand.Intn(200) == 0 {
-			spawnCreep(x, y)
-		}
-	} else if noise > -70000.0 {
-		t = sand_tile
-		w = true
-		v = false
-	} else if noise > -90000.0 {
-		t = river_tile
-		w = false
-		v = false
 	} else {
 		if (x%2+y%2)%2 == 0 {
 			t = 20
